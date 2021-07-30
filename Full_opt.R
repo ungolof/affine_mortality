@@ -294,7 +294,7 @@ f_opt_AFNSd_LS <- function(x0=c(9.582516e-03, 1.094110e-02, -1.503155e-03), delt
 
 # - CIR model
 it_f_opt_CIR <- function(x0=c(1.611524e-03, 5.763081e-03, 1.208483e-02), delta=c(-0.12379389, -0.06208546, -0.08131285), kappa=c(1.665062e-16, 3.477558e-01, 4.619791e-02), sigma=c(4.143351e-03, 6.242207e-02, 1.797287e-02), theta_Q = c(9.322613e-10, 8.457568e-03, 4.661882e-10), theta_P=c(0.01, 3.792994e-03, 6.272185e-03), r=c(2.952881e-15, 5.445661e-01, 1.493218e-07), n_iter=10, tol_lik=10, opt_met = 'Nelder-Mead'){
-  par_est_table <- matrix(NA, nrow=n_iter, ncol=length(c(x0, delta, kappa, sigma, r)) + 2)
+  par_est_table <- matrix(NA, nrow=n_iter, ncol=length(c(x0, delta, kappa, sigma, theta_Q, theta_P, r)) + 2)
   colnames(par_est_table) <- c(sprintf("x0_%d", c(1:n_factors)), sprintf("delta_%d", c(1:n_factors)), sprintf("kappa_%d", c(1:n_factors)), sprintf("sigma_%d", c(1:n_factors)), sprintf("theta_Q_%d", c(1:n_factors)), sprintf("theta_P_%d", c(1:n_factors)),  c("r1", "r2", "rc"), "n_log_lik", "Code")
   
   l_x0 <- log(x0)
