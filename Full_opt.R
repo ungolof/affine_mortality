@@ -91,7 +91,7 @@ it_f_opt_BSd_3F <- function(x0=c(2.191140e-03, -8.855686e-03, 2.711990e-02), del
   iter_count <- 2
   
   repeat{
-    par_opt_uKD0 <- optim(par_opt_uKD0$par, nLL_AFNSd_uKD, gr = NULL, method = opt_met, hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
+    par_opt_uKD0 <- optim(par_opt_uKD0$par, nLL_BSd_3F_uKD, gr = NULL, method = opt_met, hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
     par_est_table[iter_count, (1:length(c(x0, delta, kappa, sigma_dg, Sigma_cov, r)))] <- par_opt_uKD0$par
     par_est_table[iter_count, length(c(x0, delta, kappa, sigma_dg, Sigma_cov, r))+1] <- par_opt_uKD0$value
     par_est_table[iter_count, length(c(x0, delta, kappa, sigma_dg, Sigma_cov, r))+2] <- par_opt_uKD0$convergence
