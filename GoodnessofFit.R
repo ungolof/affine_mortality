@@ -425,7 +425,7 @@ poi_r_std <- function(mu_bar_hat, deaths, exposures){
 
 avg2rates <- function(mu_bar){
   mu <- mu_bar
-  for(i in 2:nrow(mu_hat)){
+  for(i in 2:nrow(mu_bar)){
     mu[i,] <- i * mu_bar[i,] - (i-1) * mu_bar[i-1,]
   }
   return(mu)
