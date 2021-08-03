@@ -297,11 +297,11 @@ l_bound_mod <- function(X,Y,low_bound=0){
 # - Basic univariate version of Koopman and Durbin (2002)
 # - r_1 and r_2 have been enforced to be positive in order to allow for an increasing
 #   Poisson variability with respect to the age
-nLL_BSi_uKD <- function(vdParameters){
+nLL_BSi_uKD <- function(vdParameters, mu_bar){
   
   n_factors <- (length(vdParameters) - 3) / 4
   
-  x_0 <- vdParameters[1:n_factors]
+  x0 <- vdParameters[1:n_factors]
   delta <- vdParameters[(n_factors+1):(n_factors*2)]
   kappa <- vdParameters[(n_factors*2+1):(n_factors*3)] # - take logs to ensure positivity
   l_sigma <- vdParameters[(n_factors*3+1):(n_factors*4)]
@@ -321,7 +321,7 @@ nLL_BSi_uKD <- function(vdParameters){
   R <- matrix(0, n_factors, n_factors) # - Factor covariance
   
   # - Initialize X and Sigma
-  x_ti <- x_0 #init_X
+  x_ti <- x0 #init_X
   P_ti <- 1e-10 * diag(1, n_factors)
   
   for(age in 1:n_ages){    # - scroll over the ages
@@ -360,7 +360,7 @@ nLL_BSi_uKD <- function(vdParameters){
 
 
 # - Basic univariate version of Koopman and Durbin (2002)
-nLL_BSd_2F_uKD <- function(vdParameters){
+nLL_BSd_2F_uKD <- function(vdParameters, mu_bar){
   n_factors <- 2
   # - Parameters
   x0 <- vdParameters[1:n_factors]
@@ -436,7 +436,7 @@ nLL_BSd_2F_uKD <- function(vdParameters){
   return(log_lik)
 }
 
-nLL_BSd_3F_uKD <- function(vdParameters){
+nLL_BSd_3F_uKD <- function(vdParameters, mu_bar){
   n_factors <- 3
   # - Parameters
   x_0 <- vdParameters[1:n_factors]
@@ -519,7 +519,7 @@ nLL_BSd_3F_uKD <- function(vdParameters){
 # - Basic univariate version of Koopman and Durbin (2002)
 # - Note: this function is exactly the same as for the Blackburn-Sherris, 
 #   with the only change in the Section Parameters and calculation of A(t,T) and B(t,T)
-nLL_AFNSi_uKD <- function(vdParameters){
+nLL_AFNSi_uKD <- function(vdParameters, mu_bar){
   n_factors <- 3
   # - Parameters
   x0 <- vdParameters[1:n_factors]
@@ -582,7 +582,7 @@ nLL_AFNSi_uKD <- function(vdParameters){
 #================== Negative log-likelihoods for the dependent AFNS models =================
 
 # - Basic univariate version of Koopman and Durbin (2002)
-nLL_AFNSd_uKD <- function(vdParameters){
+nLL_AFNSd_uKD <- function(vdParameters, mu_bar){
   n_factors <- 3
   # - Parameters
   x0 <- vdParameters[1:n_factors]
@@ -660,7 +660,7 @@ nLL_AFNSd_uKD <- function(vdParameters){
 #======================= Negative log-likelihoods for the CIR model (independent factors) =====================================
 
 # - Version of the CIR univariate filtering which includes a lower bound for the states, as well as exp(l_kappa) in order to avoid negative definite R
-nLL_CIR_uKD_bd <- function(vdParameters){
+nLL_CIR_uKD_bd <- function(vdParameters, mu_bar){
   n_factors <- (length(vdParameters) - 3) / 6
   # - Parameters
   l_x0 <- vdParameters[1:n_factors]
@@ -725,6 +725,8 @@ nLL_CIR_uKD_bd <- function(vdParameters){
   log_lik <- sum(log(F_ti) + (v_ti^2) / F_ti)
   return(log_lik)
 }
+
+
 
 
 
