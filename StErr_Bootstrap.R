@@ -9,7 +9,7 @@
 # - Functions to get the standardized residuals
 
 # - Blackburn-Sherris independent factor model
-std_res_BSi <- function(x0, delta, kappa, sigma, r){
+std_res_BSi <- function(x0, delta, kappa, sigma, r, mu_bar){
   
   r_1 <- log(r[1])
   r_2 <- log(r[2])
@@ -75,11 +75,11 @@ y_star_BSi <- function(x0, delta, kappa, sigma, r, e_star){
   
   n_factors <- length(kappa)
   
-  n_ages <- nrow(mu_bar)   # - Number of ages
-  n_years <- ncol(mu_bar)  # - Number of years
+  n_ages <- nrow(e_star)   # - Number of ages
+  n_years <- ncol(e_star)  # - Number of years
   
-  y_star <- matrix(0, nrow(mu_bar), ncol(mu_bar))
-  F_ti <- matrix(1, nrow(mu_bar), ncol(mu_bar))
+  y_star <- matrix(0, nrow(e_star), ncol(e_star))
+  F_ti <- matrix(1, nrow(e_star), ncol(e_star))
   
   ## - Factor loading matrices
   A_tT <- matrix(0, n_ages, 1)
@@ -124,7 +124,7 @@ y_star_BSi <- function(x0, delta, kappa, sigma, r, e_star){
   return(y_star)
 }
 
-nLL_BSi_uKD_BS <- function(vdParameters){
+nLL_BSi_uKD_BS <- function(vdParameters, mu_bar_BS){
   
   n_factors <- length(vdParameters) / 4
   
@@ -135,11 +135,11 @@ nLL_BSi_uKD_BS <- function(vdParameters){
   r_1 <- vdParameters[n_factors*3 + 1]
   r_2 <- vdParameters[n_factors*3 + 2]
   
-  n_ages <- nrow(mu_bar)   # - Number of ages
-  n_years <- ncol(mu_bar)  # - Number of years
+  n_ages <- nrow(mu_bar_BS)   # - Number of ages
+  n_years <- ncol(mu_bar_BS)  # - Number of years
   
-  v_ti <- mu_bar
-  F_ti <- mu_bar
+  v_ti <- mu_bar_BS
+  F_ti <- mu_bar_BS
   
   ## - Factor loading matrices
   A_tT <- matrix(0, n_ages, 1)
@@ -163,7 +163,7 @@ nLL_BSi_uKD_BS <- function(vdParameters){
     # - First observation
     x_ti <- Phi %*% x_ti    # - x_{1,t}
     P_ti <- Phi %*% P_ti %*% t(Phi) + R     # - P_{1,t}
-    v_ti[1,t] <- mu_bar[1,t] - A_tT[1] - B_tT[1,] %*% x_ti
+    v_ti[1,t] <- mu_bar_BS[1,t] - A_tT[1] - B_tT[1,] %*% x_ti
     F_ti[1,t] <- B_tT[1,] %*% P_ti %*% B_tT[1,] + exp(r_c) + exp(r_1 + exp(r_2))   
     
     for(i in 2:n_ages){
@@ -188,14 +188,14 @@ nLL_BSi_uKD_BS <- function(vdParameters){
 ## - Boostrap estimation of the standard errors (Covariance estimation)
 
 CovEst_BS_BSi <- function(x0, delta, kappa, sigma, r, mu_bar, n_BS=500, t_ex = 4){
-  par_table_BSi <- matrix(NA, n_bts, length(c(delta, kappa, sigma, r)))
+  par_table_BSi <- matrix(NA, n_BS, length(c(delta, kappa, sigma, r)))
   colnames(par_table_BSi) <- c(sprintf("delta_%d", c(1:n_factors)), sprintf("kappa_%d", c(1:n_factors)), sprintf("sigma_%d", c(1:n_factors)), c("r1", "r2", "rc"))
   
   res_table <- matrix(NA, n_ages, n_years)
   
   # - 4) Parameter estimation
   ## - 4.1) Get filtered estimates
-  Filtering <- KF_BSi_uKD(x0, delta, kappa, sigma, r)
+  Filtering <- KF_BSi_uKD(x0, delta, kappa, sigma, r, mu_bar)
   X_t_fil <- Filtering$X_t
   X_t_c_fil <- Filtering$X_t_c
   S_t_fil <- Filtering$S_t
@@ -207,7 +207,7 @@ CovEst_BS_BSi <- function(x0, delta, kappa, sigma, r, mu_bar, n_BS=500, t_ex = 4
   S_t_sm <- Smoothing$S_t_sm[,1:n_factors]
   
   # - 1) Get standardized residuals
-  std_r <- st_res_BSi(x0, delta, kappa, sigma, r)
+  std_r <- std_res_BSi(x0, delta, kappa, sigma, r, mu_bar)
   ## - Fill the first t_ex residuals, which stay the same
   res_table[,1:t_ex] <- std_r[,1:t_ex]
   
@@ -225,7 +225,7 @@ CovEst_BS_BSi <- function(x0, delta, kappa, sigma, r, mu_bar, n_BS=500, t_ex = 4
     mu_bar_BS <- y_star_BSi(x0_s, delta, kappa, sigma, r, res_table)
     
     ## - 4.4) Get bootstrapped parameter estimates
-    par_table_BSi[i,] <- optim(c(delta, kappa, log(sigma), log(r)), nLL_BSi_uKD_BS, gr = NULL, method = "BFGS", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))$par # or coordinate ascent
+    par_table_BSi[i,] <- optim(c(delta, kappa, log(sigma), log(r)), nLL_BSi_uKD_BS, mu_bar_BS=mu_bar_BS, gr = NULL, method = "BFGS", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))$par # or coordinate ascent
     ## - Backtransformation
     par_table_BSi[i,((2 * n_factors + 1):(n_factors*4))] <- exp(par_table_BSi[i,((2 * n_factors + 1):(n_factors*4))])
   }
@@ -239,7 +239,7 @@ return(list(Cov = cov_pe, St.err = serr_pe))
 
 
 # - Blackburn-Sherris dependent factor model
-st_res_BSd_3F <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r){
+std_res_BSd_3F <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar){
   
   r_1 <- log(r[1])
   r_2 <- log(r[2])
@@ -387,7 +387,7 @@ y_star_BSd_3F <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, e_star){
   return(y_star)
 }
 
-nLL_BSd_3F_uKD_BS <- function(vdParameters){
+nLL_BSd_3F_uKD_BS <- function(vdParameters, mu_bar_BS){
   n_factors <- 3
   # - Parameters
   delta <- vdParameters[1:6]####### - TO BE CHANGED
@@ -398,13 +398,13 @@ nLL_BSd_3F_uKD_BS <- function(vdParameters){
   r_2 <- vdParameters[17]
   r_c <- vdParameters[18]
   
-  n_ages <- nrow(mu_bar)   # - Number of ages
-  n_years <- ncol(mu_bar)  # - Number of years
+  n_ages <- nrow(mu_bar_BS)   # - Number of ages
+  n_years <- ncol(mu_bar_BS)  # - Number of years
+  
+  v_ti <- mu_bar_BS
+  F_ti <- mu_bar_BS
   
   delta_matrix <- low_trg_fill(delta)
-  
-  v_ti <- mu_bar
-  F_ti <- mu_bar
   
   ## - Factor loading matrices
   A_tT <- matrix(0, n_ages, 1)
@@ -443,7 +443,7 @@ nLL_BSd_3F_uKD_BS <- function(vdParameters){
     # - First observation
     x_ti <- Phi %*% x_ti    # - x_{1,t}
     P_ti <- Phi %*% P_ti %*% t(Phi) + R     # - P_{1,t}
-    v_ti[1,t] <- mu_bar[1,t] - A_tT[1] - B_tT[1,] %*% x_ti
+    v_ti[1,t] <- mu_bar_BS[1,t] - A_tT[1] - B_tT[1,] %*% x_ti
     F_ti[1,t] <- B_tT[1,] %*% P_ti %*% B_tT[1,] + exp(r_c) + exp(r_1 + exp(r_2))  
     
     for(i in 2:n_ages){
@@ -465,7 +465,7 @@ nLL_BSd_3F_uKD_BS <- function(vdParameters){
 
 CovEst_BS_BSd_3F <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, n_BS=500, t_ex = 4){
   
-  par_table_BSd <- matrix(NA, n_bts, length(c(delta, kappa, sigma_dg, Sigma_cov, r)))
+  par_table_BSd <- matrix(NA, n_BS, length(c(delta, kappa, sigma_dg, Sigma_cov, r)))
   colnames(par_table_BSd) <- c("delta_11", 'delta_21', 'delta_22', 'delta_31', 'delta_32', 'delta_33', sprintf("kappa_%d", c(1:n_factors)), 'sigma_11', 'sigma_21', 'sigma_22', 'sigma_31', 'sigma_32', 'sigma_33', c("r1", "r2", "rc"))
   res_table <- matrix(NA, n_ages, n_years)
   
@@ -483,7 +483,7 @@ CovEst_BS_BSd_3F <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, n
   S_t_sm <- Smoothing$S_t_sm[,1:3]
   
   # - 1) Get standardized residuals
-  std_r <- st_res_BSd_3F(x0, delta, kappa, sigma_dg, Sigma_cov, r)
+  std_r <- std_res_BSd_3F(x0, delta, kappa, sigma_dg, Sigma_cov, r)
   ## - Fill the first t_ex residuals, which stay the same
   res_table[,1:t_ex] <- std_r[,1:t_ex]
   
@@ -507,7 +507,7 @@ CovEst_BS_BSd_3F <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, n
     mu_bar_BS <- y_star_BSd_3F(x0_s, delta, kappa, sigma_dg, Sigma_cov, r, res_table)
     
     ## - 4.4) Get bootstrapped parameter estimates
-    par_table_BSd[i,] <- optim(c(delta, kappa, dg_l_Sigma_chol, odg_Sigma_chol, log(r)), nLL_BSd_3F_uKD_BS, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))$par # or coordinate ascent
+    par_table_BSd[i,] <- optim(c(delta, kappa, dg_l_Sigma_chol, odg_Sigma_chol, log(r)), nLL_BSd_3F_uKD_BS, mu_bar_BS=mu_bar_BS, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))$par # or coordinate ascent
     
     ## - Backtransformation
     par_table_BSd[i,10:15] <- parest2cov(par_table_BSd[i,10:12], par_table_BSd[i,13:15])
@@ -525,7 +525,7 @@ CovEst_BS_BSd_3F <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, n
 
 # - AFNS model with independent factors
 
-st_res_AFNSi <- function(x0, delta, kappa, sigma, r){
+std_res_AFNSi <- function(x0, delta, kappa, sigma, r, mu_bar){
   
   r_1 <- log(r[1])
   r_2 <- log(r[2])
@@ -639,7 +639,7 @@ y_star_AFNSi <- function(x0, delta, kappa, sigma, r, e_star){
   return(y_star)
 }
 
-nLL_AFNSi_uKD_BS <- function(vdParameters){
+nLL_AFNSi_uKD_BS <- function(vdParameters, mu_bar_BS){
   
   n_factors <- 3
   
@@ -650,11 +650,11 @@ nLL_AFNSi_uKD_BS <- function(vdParameters){
   r_1 <- vdParameters[n_factors*2 + 2]
   r_2 <- vdParameters[n_factors*2 + 3]
   
-  n_ages <- nrow(mu_bar)   # - Number of ages
-  n_years <- ncol(mu_bar)  # - Number of years
+  n_ages <- nrow(mu_bar_BS)   # - Number of ages
+  n_years <- ncol(mu_bar_BS)  # - Number of years
   
-  v_ti <- mu_bar
-  F_ti <- mu_bar
+  v_ti <- mu_bar_BS
+  F_ti <- mu_bar_BS
   
   ## - Factor loading matrices
   A_tT <- matrix(0, n_ages, 1)
@@ -678,7 +678,7 @@ nLL_AFNSi_uKD_BS <- function(vdParameters){
     # - First observation
     x_ti <- Phi %*% x_ti    # - x_{1,t}
     P_ti <- Phi %*% P_ti %*% t(Phi) + R     # - P_{1,t}
-    v_ti[1,t] <- mu_bar[1,t] - A_tT[1] - B_tT[1,] %*% x_ti
+    v_ti[1,t] <- mu_bar_BS[1,t] - A_tT[1] - B_tT[1,] %*% x_ti
     F_ti[1,t] <- B_tT[1,] %*% P_ti %*% B_tT[1,] + exp(r_c) + exp(r_1 + exp(r_2))   
     
     for(i in 2:n_ages){
@@ -701,7 +701,7 @@ nLL_AFNSi_uKD_BS <- function(vdParameters){
 
 
 CovEst_BS_AFNSi <- function(x0, delta, kappa, sigma, r, mu_bar, n_BS=500, t_ex = 4){
-  par_table_AFNSi <- matrix(NA, n_bts, length(c(delta, kappa, sigma, r)))
+  par_table_AFNSi <- matrix(NA, n_BS, length(c(delta, kappa, sigma, r)))
   colnames(par_table_AFNSi) <- c("delta", sprintf("kappa_%s", c("L", 'S', 'C')), sprintf("sigma_%s", c("L", 'S', 'C')), c("r1", "r2", "rc"))
   
   res_table <- matrix(NA, n_ages, n_years)
@@ -720,7 +720,7 @@ CovEst_BS_AFNSi <- function(x0, delta, kappa, sigma, r, mu_bar, n_BS=500, t_ex =
   S_t_sm <- Smoothing$S_t_sm[,1:n_factors]
   
   # - 1) Get standardized residuals
-  std_r <- st_res_AFNSi(x0, delta, kappa, sigma, r)
+  std_r <- std_res_AFNSi(x0, delta, kappa, sigma, r)
   ## - Fill the first t_ex residuals, which stay the same
   res_table[,1:t_ex] <- std_r[,1:t_ex]
   
@@ -738,7 +738,7 @@ CovEst_BS_AFNSi <- function(x0, delta, kappa, sigma, r, mu_bar, n_BS=500, t_ex =
     mu_bar_BS <- y_star_AFNSi(x0_s, delta, kappa, sigma, r, res_table)
     
     ## - 4.4) Get bootstrapped parameter estimates
-    par_table_AFNSi[i,] <- optim(c(delta, kappa, log(sigma), log(r)), nLL_AFNSi_uKD_BS, gr = NULL, method = "BFGS", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))$par # or coordinate ascent
+    par_table_AFNSi[i,] <- optim(c(delta, kappa, log(sigma), log(r)), nLL_AFNSi_uKD_BS, mu_bar_BS=mu_bar_BS, gr = NULL, method = "BFGS", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))$par # or coordinate ascent
     ## - Backtransformation
     par_table_AFNSi[i,5:10] <- exp(par_table_AFNSi[i,5:10])
   }
@@ -753,7 +753,7 @@ CovEst_BS_AFNSi <- function(x0, delta, kappa, sigma, r, mu_bar, n_BS=500, t_ex =
 
 # - AFNS model with dependent factors
 
-st_res_AFNSd <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r){
+std_res_AFNSd <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar){
   
   r_1 <- log(r[1])
   r_2 <- log(r[2])
@@ -898,7 +898,7 @@ y_star_AFNSd <- function(x0, delta, kappa, dg_l_Sigma_chol, odg_Sigma_chol, r, e
   return(y_star)
 }
 
-nLL_AFNSd_uKD_BS <- function(vdParameters){
+nLL_AFNSd_uKD_BS <- function(vdParameters, mu_bar_BS){
   n_factors <- 3
   # - Parameters
   delta <- vdParameters[1]
@@ -909,11 +909,11 @@ nLL_AFNSd_uKD_BS <- function(vdParameters){
   r_1 <- vdParameters[n_factors * (3 + n_factors) / 2 + 2]
   r_2 <- vdParameters[n_factors * (3 + n_factors) / 2 + 3]
   
-  n_ages <- nrow(mu_bar)   # - Number of ages
-  n_years <- ncol(mu_bar)  # - Number of years
+  n_ages <- nrow(mu_bar_BS)   # - Number of ages
+  n_years <- ncol(mu_bar_BS)  # - Number of years
   
-  v_ti <- mu_bar
-  F_ti <- mu_bar
+  v_ti <- mu_bar_BS
+  F_ti <- mu_bar_BS
   
   ## - Factor loading matrices
   A_tT <- matrix(0, n_ages, 1)
@@ -951,7 +951,7 @@ nLL_AFNSd_uKD_BS <- function(vdParameters){
     # - First observation
     x_ti <- Phi %*% x_ti    # - x_{1,t}
     P_ti <- Phi %*% P_ti %*% t(Phi) + R     # - P_{1,t}
-    v_ti[1,t] <- mu_bar[1,t] - A_tT[1] - B_tT[1,] %*% x_ti
+    v_ti[1,t] <- mu_bar_BS[1,t] - A_tT[1] - B_tT[1,] %*% x_ti
     F_ti[1,t] <- B_tT[1,] %*% P_ti %*% B_tT[1,] + exp(r_c) + exp(r_1 + exp(r_2))    
     for(i in 2:n_ages){
       x_ti <- x_ti + P_ti %*% B_tT[i-1,] %*% (1 / F_ti[i-1,t]) %*% v_ti[i-1,t] 
@@ -974,7 +974,7 @@ nLL_AFNSd_uKD_BS <- function(vdParameters){
 
 CovEst_BS_AFNSd <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, n_BS=500, t_ex = 4){
   
-  par_table_AFNSd <- matrix(NA, n_bts, length(c(delta, kappa, sigma_dg, Sigma_cov, r)))
+  par_table_AFNSd <- matrix(NA, n_BS, length(c(delta, kappa, sigma_dg, Sigma_cov, r)))
   colnames(par_table_AFNSd) <- c("delta", sprintf("kappa_%d", c(1:n_factors)), 'sigma_L', 'sigma_LS', 'sigma_S', 'sigma_LC', 'sigma_SC', 'sigma_C', c("r1", "r2", "rc"))
   res_table <- matrix(NA, n_ages, n_years)
   
@@ -992,7 +992,7 @@ CovEst_BS_AFNSd <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, n_
   S_t_sm <- Smoothing$S_t_sm[,1:3]
   
   # - 1) Get standardized residuals
-  std_r <- st_res_AFNSd(x0, delta, kappa, sigma_dg, Sigma_cov, r)
+  std_r <- std_res_AFNSd(x0, delta, kappa, sigma_dg, Sigma_cov, r)
   ## - Fill the first t_ex residuals, which stay the same
   res_table[,1:t_ex] <- std_r[,1:t_ex]
   
@@ -1016,7 +1016,7 @@ CovEst_BS_AFNSd <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, n_
     mu_bar_BS <- y_star_AFNSd(x0_s, delta, kappa, sigma_dg, Sigma_cov, r, res_table)
     
     ## - 4.4) Get bootstrapped parameter estimates
-    par_table_AFNSd[i,] <- optim(c(delta, kappa, dg_l_Sigma_chol, odg_Sigma_chol, log(r)), nLL_AFNSd_uKD_BS, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))$par # or coordinate ascent
+    par_table_AFNSd[i,] <- optim(c(delta, kappa, dg_l_Sigma_chol, odg_Sigma_chol, log(r)), nLL_AFNSd_uKD_BS, mu_bar_BS=mu_bar_BS, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))$par # or coordinate ascent
     
     ## - Backtransformation
     par_table_AFNSd[i,5:10] <- parest2cov(par_table_AFNSd[i,5:7], par_table_AFNSd[i,8:10])
@@ -1033,7 +1033,7 @@ CovEst_BS_AFNSd <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, n_
 
 # - CIR
 
-st_res_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r){
+std_res_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar){
   
   r_1 <- log(r[1])
   r_2 <- log(r[2])
@@ -1102,11 +1102,11 @@ y_star_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, e_star){
   
   n_factors <- length(kappa)
   
-  n_ages <- nrow(mu_bar)   # - Number of ages
-  n_years <- ncol(mu_bar)  # - Number of years
+  n_ages <- nrow(e_star)   # - Number of ages
+  n_years <- ncol(e_star)  # - Number of years
   
-  y_star <- matrix(0, nrow(mu_bar), ncol(mu_bar))
-  F_ti <- matrix(1, nrow(mu_bar), ncol(mu_bar))
+  y_star <- matrix(0, nrow(e_star), ncol(e_star))
+  F_ti <- matrix(1, nrow(e_star), ncol(e_star))
   
   ## - Factor loading matrices
   A_tT <- matrix(0, n_ages, 1)
@@ -1154,7 +1154,7 @@ y_star_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, e_star){
   return(y_star)
 }
 
-nLL_CIR_uKD_BS <- function(vdParameters){
+nLL_CIR_uKD_BS <- function(vdParameters, mu_bar_BS){
   n_factors <- length(vdParameters) / 6
   # - Parameters
   delta <- vdParameters[1:n_factors]
@@ -1166,11 +1166,11 @@ nLL_CIR_uKD_BS <- function(vdParameters){
   r_2 <- vdParameters[n_factors*5 + 2]
   r_c <- vdParameters[n_factors*5 + 3]
   
-  n_ages <- nrow(mu_bar)   # - Number of ages
-  n_years <- ncol(mu_bar)  # - Number of years
+  n_ages <- nrow(mu_bar_BS)   # - Number of ages
+  n_years <- ncol(mu_bar_BS)  # - Number of years
   
-  v_ti <- mu_bar
-  F_ti <- mu_bar
+  v_ti <- mu_bar_BS
+  F_ti <- mu_bar_BS
   
   ## - Factor loading matrices
   A_tT <- matrix(0, n_ages, 1)
@@ -1179,7 +1179,7 @@ nLL_CIR_uKD_BS <- function(vdParameters){
   
   # - Initialize X and Sigma
   #x_ti <- x_0 #init_X
-  x_ti <- exp(l_x0)
+  x_ti <- x0_s
   P_ti <- 1e-10 * diag(1, n_factors)
   
   for(age in 1:n_ages){    # - scroll over the ages
@@ -1197,7 +1197,7 @@ nLL_CIR_uKD_BS <- function(vdParameters){
     x_ti <- Phi %*% x_ti + exp(l_theta_P) * (1 - exp(-exp(l_kappa)))
     x_ti <- l_bound(x_ti)
     P_ti <- Phi %*% P_ti %*% t(Phi) + R[,(t * n_factors + 1):((t+1) * n_factors)]     # - P_{1,t}
-    v_ti[1,t] <- mu_bar[1,t] - A_tT[1] - B_tT[1,] %*% x_ti
+    v_ti[1,t] <- mu_bar_BS[1,t] - A_tT[1] - B_tT[1,] %*% x_ti
     F_ti[1,t] <- B_tT[1,] %*% P_ti %*% B_tT[1,] + exp(r_c) + exp(r_1 + exp(r_2))  
     
     for(i in 2:n_ages){
@@ -1221,7 +1221,7 @@ nLL_CIR_uKD_BS <- function(vdParameters){
 
 
 CovEst_BS_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, n_BS=500, t_ex = 4){
-  par_table_CIR <- matrix(NA, n_bts, length(c(delta, kappa, sigma, theta_Q, theta_P, r)))
+  par_table_CIR <- matrix(NA, n_BS, length(c(delta, kappa, sigma, theta_Q, theta_P, r)))
   colnames(par_table_CIR) <- c(sprintf("delta_%d", c(1:n_factors)), sprintf("kappa_%d", c(1:n_factors)), sprintf("sigma_%d", c(1:n_factors)), sprintf("theta_Q_%d", c(1:n_factors)), sprintf("theta_P_%d", c(1:n_factors)), c("r1", "r2", "rc"))
   
   res_table <- matrix(NA, n_ages, n_years)
@@ -1240,7 +1240,7 @@ CovEst_BS_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, 
   S_t_sm <- Smoothing$S_t_sm[,1:n_factors]
   
   # - 1) Get standardized residuals
-  std_r <- st_res_CIR(x0, delta, kappa, sigma, theta_Q, theta_P, r)
+  std_r <- std_res_CIR(x0, delta, kappa, sigma, theta_Q, theta_P, r)
   ## - Fill the first t_ex residuals, which stay the same
   res_table[,1:t_ex] <- std_r[,1:t_ex]
   
@@ -1251,14 +1251,14 @@ CovEst_BS_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, 
     t_sample <- sample(c((t_ex+1):n_years), (n_years-t_ex), replace=TRUE)  # - starting from 5 to account for KF start up irregularity
     res_table[,(t_ex + 1):n_years] <- std_r[,t_sample]
     
-    ## - 4.3) Sample x0 from the smoothing distribution
-    x0_s <- mvrnorm(n = 1, mu=X_t_sm, Sigma = S_t_sm, tol = 1e-6, empirical = FALSE, EISPACK = FALSE)
+    ## - 4.3) Sample x0 from the smoothing distribution - adjusted to ensure a lower bound of zero
+    x0_s <- l_bound(mvrnorm(n = 1, mu=X_t_sm, Sigma = S_t_sm, tol = 1e-6, empirical = FALSE, EISPACK = FALSE))
     
     # - 3) Get mu_bar_star
     mu_bar_BS <- y_star_CIR(x0_s, delta, kappa, sigma, theta_Q, theta_P, r, res_table)
     
     ## - 4.4) Get bootstrapped parameter estimates
-    par_table_CIR[i,] <- optim(c(delta, kappa, log(sigma), log(theta_Q), log(theta_P), log(r)), nLL_CIR_uKD_BS, gr = NULL, method = "BFGS", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))$par # or coordinate ascent
+    par_table_CIR[i,] <- optim(c(delta, kappa, log(sigma), log(theta_Q), log(theta_P), log(r)), nLL_CIR_uKD_BS, mu_bar_BS=mu_bar_BS, gr = NULL, method = "BFGS", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))$par # or coordinate ascent
     ## - Backtransformation
     par_table_CIR[i,((n_factors + 1):(n_factors*6))] <- exp(par_table_CIR[i,((n_factors + 1):(n_factors*6))])
   }
@@ -1269,5 +1269,6 @@ CovEst_BS_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, 
   
   return(list(Cov = cov_pe, St.err = serr_pe))
 }
+
 
 
