@@ -3,14 +3,14 @@
 
 # - Blackburn - Sherris independent factor model
 
-S_t_BSi_proj <- function(x0, delta, kappa, sigma, r, proj_years){
+S_t_BSi_proj <- function(x0, delta, kappa, sigma, r, mu_bar, proj_years){
   
   n_factors <- length(kappa)
   n_ages <- nrow(mu_bar)
   n_years <- ncol(mu_bar)
   
   B_tT <- matrix(NA, n_ages, n_factors)
-  X_t_last <- KF_BSi_uKD(x0, delta, kappa, sigma, r)$X_t[,n_years+1]
+  X_t_last <- KF_BSi_uKD(x0, delta, kappa, sigma, r, mu_bar)$X_t[,n_years+1]
 
   E_X_t1 <- exp(-kappa * proj_years) * X_t_last
   
@@ -27,14 +27,14 @@ S_t_BSi_proj <- function(x0, delta, kappa, sigma, r, proj_years){
 }
 
 # - Blackburn - Sherris dependent factor model
-S_t_BSd_2F_proj <- function(x0, delta, kappa, sigma, r, proj_years){
+S_t_BSd_2F_proj <- function(x0, delta, kappa, sigma, r, mu_bar, proj_years){
   
   n_factors <- 2
   n_ages <- nrow(mu_bar)
   n_years <- ncol(mu_bar)
   
   B_tT <- matrix(NA, n_ages, n_factors)
-  X_t_last <- KF_BSd_2F_uKD(x0, delta, kappa, sigma_dg, Sigma_cov, r)$X_t[,n_years+1]
+  X_t_last <- KF_BSd_2F_uKD(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar)$X_t[,n_years+1]
   
   E_X_t1 <- exp(-kappa * proj_years) * X_t_last
   
@@ -57,14 +57,14 @@ S_t_BSd_2F_proj <- function(x0, delta, kappa, sigma, r, proj_years){
   return(S_prj)
 }
 
-S_t_BSd_3F_proj <- function(x0, delta, kappa, sigma, r, proj_years){
+S_t_BSd_3F_proj <- function(x0, delta, kappa, sigma, r, mu_bar, proj_years){
   
   n_factors <- 3
   n_ages <- nrow(mu_bar)
   n_years <- ncol(mu_bar)
   
   B_tT <- matrix(NA, n_ages, n_factors)
-  X_t_last <- KF_BSd_3F_uKD(x0, delta, kappa, sigma_dg, Sigma_cov, r)$X_t[,n_years+1]
+  X_t_last <- KF_BSd_3F_uKD(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar)$X_t[,n_years+1]
   
   E_X_t1 <- exp(-kappa * proj_years) * X_t_last
   
@@ -88,14 +88,14 @@ S_t_BSd_3F_proj <- function(x0, delta, kappa, sigma, r, proj_years){
 }
 
 # - AFNS independent factor model
-S_t_AFNSi_proj <- function(x0, delta, kappa, sigma, r, proj_years){
+S_t_AFNSi_proj <- function(x0, delta, kappa, sigma, r, mu_bar, mu_bar, proj_years){
   
   n_factors <- 3
   n_ages <- nrow(mu_bar)
   n_years <- ncol(mu_bar)
   
   B_tT <- matrix(NA, n_ages, n_factors)
-  X_t_last <- KF_AFNSi_uKD(x0, delta, kappa, sigma, r)$X_t[,n_years+1]
+  X_t_last <- KF_AFNSi_uKD(x0, delta, kappa, sigma, r, mu_bar)$X_t[,n_years+1]
   
   E_X_t1 <- exp(-kappa * proj_years) * X_t_last
   
@@ -112,14 +112,14 @@ S_t_AFNSi_proj <- function(x0, delta, kappa, sigma, r, proj_years){
 }
 
 # - AFNS dependent factor model
-S_t_AFNSd_proj <- function(x0, delta, kappa, sigma, r, proj_years){
+S_t_AFNSd_proj <- function(x0, delta, kappa, sigma, r, mu_bar, proj_years){
   
   n_factors <- 3
   n_ages <- nrow(mu_bar)
   n_years <- ncol(mu_bar)
   
   B_tT <- matrix(NA, n_ages, n_factors)
-  X_t_last <- KF_AFNSd_uKD(x0, delta, kappa, sigma_dg, Sigma_cov, r)$X_t[,n_years+1]
+  X_t_last <- KF_AFNSd_uKD(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar)$X_t[,n_years+1]
   
   E_X_t1 <- exp(-kappa * proj_years) * X_t_last
   
@@ -143,14 +143,14 @@ S_t_AFNSd_proj <- function(x0, delta, kappa, sigma, r, proj_years){
 }
 
 # - CIR model
-S_t_CIR_proj <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, proj_years){
+S_t_CIR_proj <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, proj_years){
   
   n_factors <- length(kappa)
   n_ages <- nrow(mu_bar)
   n_years <- ncol(mu_bar)
   
   B_tT <- matrix(NA, n_ages, n_factors)
-  X_t_last <- KF_CIR_uKD(x0, delta, kappa, sigma, theta_Q, theta_P, r)$X_t[,n_years+1]
+  X_t_last <- KF_CIR_uKD(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar)$X_t[,n_years+1]
   
   E_X_t1 <- exp(-kappa * proj_years) + theta_P * (1 - exp(-kappa)) * sum(exp(-kappa * c(0:(proj_years-1)))) #exp(-kappa) * X_t_last + theta_P * (1 - exp(-kappa)) # - FIX THE RECURSION TO GENERALIZE
   
@@ -165,5 +165,6 @@ S_t_CIR_proj <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, proj_year
   }
   return(S_prj)
 }
+
 
 
