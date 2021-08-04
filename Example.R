@@ -1,7 +1,10 @@
 #============ - Sample code for implementation - ==================================================
+# - We show the code for analysing the Blackburn-Sherris model with three independent factors
+# - for the USA mortality dataset
+# - The analysis of other models follow along similar lines
+#==================================================================================================
 
-
-#======================== - Call files for estimation - ================================
+#=============================== - Call files for estimation - ====================================
 source('Est_fun.R') # - Read all functions to optimize the models and the packages needed
 source('Full_opt.R') # - Read all functions which perform the full optimization
 source('Coordinate_Ascent.R') # - Read all functions which perform optimization by coordinate ascent
@@ -13,7 +16,7 @@ source('Projection.R') # - Read functions yielding the projected cohort survival
 
 
 
-#======================== - Variable definition - ================================
+#=============================== - Variable definition - ==========================================
 AgeRange <- c(50:99) # - Set of ages under analysis
 CohortRange <- seq(1883, 1915)  # - Set of cohorts under analysis
 PeriodRange <- CohortRange + AgeRange[1] # - Period data
@@ -31,8 +34,11 @@ n_years <- length(CohortRange) # - Number of cohort years (T)
 colnames(m_xt) <- colnames(E_xt) <- colnames(d_xt) <- CohortRange
 rownames(m_xt) <- rownames(E_xt) <- rownames(d_xt) <- AgeRange
 
+rownames(mu_bar_USA) <- AgeRange
+colnames(mu_bar_USA) <- CohortRange
 
-#================== - Read file deaths and exposures directly from the HMD dataset=========
+
+#================== - Read file deaths and exposures directly from the HMD dataset - ==============
 # - Read file deaths and exposures directly from the HMD dataset
 deaths <- readHMDweb(CNTRY = "USA", item = "Deaths_1x1", username, password, fixup = TRUE)
 exposures <- readHMDweb(CNTRY = "USA", item = "Exposures_1x1", username, password, fixup = TRUE)
@@ -63,7 +69,7 @@ for(i in 1:ncol(S_xt)){
   }
 }
 
-#========================== - Parameter estimation - =================
+#=================================== - Parameter estimation - ===============================
 
 
 
@@ -112,9 +118,11 @@ par_est_LS_final <- f_opt_BSi_LS(mu_bar=mu_bar_USA, x0=x0_sv, delta=delta_sv, ka
 
 ## - Get parameter estimates
 pe_BSi_3F <- par_est_LS_final$par_est
+log_lik_BSi_3F <- par_est_LS_final$log_lik
 
-#========================== - Goodness of fit - =================
+#====================================== - Goodness of fit - ==============================
 
+# - Get estimated parameters
 x0_est <- pe_BSi_3F$x0
 delta_est <- pe_BSi_3F$delta
 kappa_est <- pe_BSi_3F$kappa
@@ -123,6 +131,90 @@ r1_est <- pe_BSi_3F$r1
 r2_est <- pe_BSi_3F$r2
 rc_est <- pe_BSi_3F$rc
 
+# - Get fitted average force of mortality
+
+mu_bar_hat_BSi_3F <- mu_bar_hat_BSi(x0=x0_est, delta=delta_est, kappa=kappa_est, sigma=sigma_est, r=c(r1_est, r2_est, rc_est), mu_bar=mu_bar_USA)
+
+# - Get fitted force of mortality
+mu_hat_BSi_3F <- avg2rates(mu_bar_hat_BSi_3F)
+
+# - AIC
+AIC_BSi_3F <- AIC_BIC(log_lik_BSi_3F, 12, nrow(mu_bar_USA)*ncol(mu_bar_USA))$AIC
+# - BIC
+BIC_BSi_3F <- AIC_BIC(log_lik_BSi_3F, 12, nrow(mu_bar_USA)*ncol(mu_bar_USA))$BIC
+
+# - RMSE
+RMSE_BSi_3F <- RMSE(mu_bar_USA, mu_bar_hat_BSi_3F)
+
+# - MAPE (based on Survival probabilities)
+## - Step 1 -  Get fitted survival probabilities
+S_xt_BSi_3F <- matrix(NA, length(AgeRange),length(CohortRange))
+
+for(i in 1:ncol(S_xc)){
+  for(j in 1:nrow(S_xc)){
+    S_xt_BSi_3F[j,i] <- exp(-mu_bar_hat_BSi_3F[j,i] * j)
+  }
+}
+
+## - Step 2 - Get MAPE (for each age)
+MAPE_BSi_3F <- MAPE_row(S_xt, S_xt_BSi_3F)
+
+## - Step 3 - Plot
+
+plot(c(50:85), MAPE_BSi_3F[1:36]*100, type="o", pch=1, cex=0.5, ylim=c(0, max(MAPE_BSi_3F[1:36]*100)), xlim=c(50,100), ylab="Percentage error", xlab="Age", lty=1)
+par(new = TRUE)
+plot(c(50:99), MAPE_BSi_3F[1:50]*100, type="o", pch=1, cex=0.5, lty=1, axes = FALSE, bty = "n", xlab = "", ylab = "", ylim=c(0,max(MAPE_BSi_3F[36:50]*100)),col='white')
+lines(c(85:99), MAPE_BSi_3F[36:50]*100, type="o", pch=1, cex=0.5, lty=1)
+abline(v=84.5)
+axis(side=4)
+
+#========================= - Residuals graphical checks - =============================
+
+# - Libraries for heatmaps
+library(heatmaply)
+library(fields)
+
+# - Residuals
+res_BSi_3F <- residuals_f(mu_bar_USA, mu_bar_hat_BSi_3F)
+
+## - 3D Plotting
+persp3D(CohortRange, AgeRange, t(res_BSi), main="", zlab="", xlab="Cohort", ylab="Age", theta = 35, phi = 25, shade = 0.5, 
+        axes = T, box=TRUE, nticks=5, ticktype="detailed", xlim=c(1880,1920), ylim = c(50,100), zlim=c(-0.001,0.01))
+
+# - 0-1 Residuals
+res01_BSi_3F <- residuals_01(mu_bar_USA, mu_bar_hat_BSi_3F)
+
+## - Heatmap plotting example 1 (use package heatmaply)
+heatmaply(res01_BSi_3F[c(50:1),], dendrogram = "none", xlab = "Cohort", ylab="Age", xaxis_font_size="6px", yaxis_font_size="6px")
+
+
+# - Standardized residuals
+res_std_BSi_3F <- residuals_std_BSi(observed=mu_bar_USA, x0=x0_est, delta=delta_est, kappa=kappa_est, sigma=sigma_est, r=c(r1_est, r2_est, rc_est))
+
+## - Heatmap plotting example 2 (use package fields)
+
+### - Choice of the color
+col <- colorRampPalette(RColorBrewer::brewer.pal(9, "Greys"))(64)
+col <- colorRampPalette(RColorBrewer::brewer.pal(10, "RdBu"))(64)
+
+maxRes <- max(abs(res_std_BSi_3F), na.rm = TRUE)
+reslim <- c(-maxRes, maxRes)
+
+image.plot(CohortRange, AgeRange, t(res_std_BSi_3F), zlim = reslim, ylab = "Age", xlab = "Cohort", col = col)
+
+
+#========================= - Projection - =============================
+
+# - 10 year projection
+Proj_S_BSi_3F <- S_t_BSi_proj(x0=x0_est, delta=delta_est, kappa=kappa_est, sigma=sigma_est, r=c(r1_est, r2_est, rc_est), mu_bar=mu_bar_USA, proj_years = 10)
+
+## - Plotting example
+plot(c(51:100), Proj_S_BSi_3F, type="l", xlab="Age", ylab="S(t)", lwd=1)
+
+
+#======================= - Estimation of the standard errors of the parameter estimates
+
+Par_unc_BSi_3F <- CovEst_BS_BSi(x0=x0_est, delta=delta_est, kappa=kappa_est, sigma=sigma_est, r=c(r1_est, r2_est, rc_est), mu_bar=mu_bar_USA, n_BS=100, t_ex=4)
 
 
 
