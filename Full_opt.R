@@ -1,4 +1,5 @@
 
+
 #==================== - File for iterative full optimization routines - ========================================
 # - This file includes the functions which can be run in order to carry out the 1st stage of the 
 # - optimization process, where the neg-loglikelihood function is optimized over all parameters simultaneously.
@@ -360,6 +361,10 @@ f_opt_CIR_LS <- function(mu_bar, x0=c(1.611524e-03, 5.763081e-03, 1.208483e-02),
   
   return(list(par_est = list(x0=x0_est, delta=delta_est, kappa=kappa_est, sigma=sigma_est, theta_Q=theta_Q_est, theta_P=theta_P_est, r1=r1_est, r2=r2_est, rc=rc_est), log_lik = (-0.5 * par_opt_LS$value - 0.5 * nrow(mu_bar) * ncol(mu_bar))))
 }
+
+
+
+
 
 
 
