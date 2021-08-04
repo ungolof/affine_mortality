@@ -300,7 +300,7 @@ KF_BSd_3F_uKD <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar){
 
 
 ### - Independent AFNS
-KF_AFNSi_uKD <- function(x0, delta, kappa, l_sigma, r, mu_bar){
+KF_AFNSi_uKD <- function(x0, delta, kappa, sigma, r, mu_bar){
   
   r_1 <- log(r[1])
   r_2 <- log(r[2])
@@ -344,12 +344,12 @@ KF_AFNSi_uKD <- function(x0, delta, kappa, l_sigma, r, mu_bar){
   H <- meas_err_BS(r_1, r_2, r_c)
   
   for(age in 1:n_ages){    # - scroll over the ages
-    A_tT[age,1] <- A_AFNSi(age, exp(l_sigma), delta)  
+    A_tT[age,1] <- A_AFNSi(age, sigma, delta)  
     B_tT[age,] <- B_AFNS(age,delta)  
   }
   
   Phi <- diag(exp(-kappa), n_factors) # K_p <- diag(kappa, 2) ## exp(-K_p)
-  R <- diag(((exp(l_sigma*2)) / (2 * kappa)) * (1 - exp(-2 * kappa)), n_factors)
+  R <- diag(((sigma^2) / (2 * kappa)) * (1 - exp(-2 * kappa)), n_factors)
   
   for(t in 1:n_years){
     
@@ -590,6 +590,9 @@ RTS_sm_bas <- function(X_t, X_t_c, S_t, S_t_c, kappa){
   }
   return(list(X_t_sm=X_t_sm, S_t_sm=S_t_sm, G_t=G_t))
 }
+
+
+
 
 
 
