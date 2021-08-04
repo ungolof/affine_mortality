@@ -220,8 +220,8 @@ residuals_f <- function(observed, estimated){
 ## - 0/1 residuals (0 if negative, 1 if positive)
 residuals_01 <- function(observed, estimated){
   residuals <- ifelse(observed - estimated > 0, 1, 0)
-  colnames(residuals) <- colnames(mu_bar)
-  rownames(residuals) <- rownames(mu_bar)
+  colnames(residuals) <- colnames(observed)
+  rownames(residuals) <- rownames(observed)
   return(residuals)
 }
 
@@ -248,8 +248,8 @@ residuals_std_BSi <- function(observed, x0, delta, kappa, sigma, r){
     residuals[,t] <- premultiplier %*% residuals[,t]
   }
   
-  colnames(residuals) <- colnames(mu_bar)
-  rownames(residuals) <- rownames(mu_bar)
+  colnames(residuals) <- colnames(observed)
+  rownames(residuals) <- rownames(observed)
   return(residuals)
 }
 
@@ -294,8 +294,8 @@ residuals_std_BSd_3F <- function(observed, x0, delta, kappa, sigma_dg, Sigma_cov
     residuals[,t] <- premultiplier %*% residuals[,t]
   }
   
-  colnames(residuals) <- colnames(mu_bar)
-  rownames(residuals) <- rownames(mu_bar)
+  colnames(residuals) <- colnames(observed)
+  rownames(residuals) <- rownames(observed)
   return(residuals)
 }
 
@@ -321,8 +321,8 @@ residuals_std_AFNSi <- function(observed, x0, delta, kappa, sigma, r){
     residuals[,t] <- premultiplier %*% residuals[,t]
   }
   
-  colnames(residuals) <- colnames(mu_bar)
-  rownames(residuals) <- rownames(mu_bar)
+  colnames(residuals) <- colnames(observed)
+  rownames(residuals) <- rownames(observed)
   return(residuals)
 }
 
@@ -366,8 +366,8 @@ residuals_std_AFNSd <- function(observed, delta, kappa, sigma_dg, Sigma_cov, r){
     residuals[,t] <- premultiplier %*% residuals[,t]
   }
   
-  colnames(residuals) <- colnames(mu_bar)
-  rownames(residuals) <- rownames(mu_bar)
+  colnames(residuals) <- colnames(observed)
+  rownames(residuals) <- rownames(observed)
   return(residuals)
 }
 
@@ -402,8 +402,8 @@ residuals_std_CIR <- function(observed, x0, delta, kappa, sigma, theta_Q, theta_
     residuals[,t] <- premultiplier %*% residuals[,t]
   }
   
-  colnames(residuals) <- colnames(mu_bar)
-  rownames(residuals) <- rownames(mu_bar)
+  colnames(residuals) <- colnames(observed)
+  rownames(residuals) <- rownames(observed)
   return(residuals)
 }
 
@@ -430,6 +430,7 @@ avg2rates <- function(mu_bar){
   }
   return(mu)
 }
+
 
 
 
