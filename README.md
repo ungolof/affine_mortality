@@ -8,4 +8,5 @@ Please report any bug to one of the following e-mail addresses:
 * yuxin.zhou@unsw.edu.au (Yuxin Zhou)
 
 The work in this repository can be cited as follows:
+
 Francesco Ungolo, Michael Sherris and Yuxin Zhou (2021), *affine_mortality: A Github repository for estimation, analysis and projection of affine mortality models*
