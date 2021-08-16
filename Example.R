@@ -150,8 +150,8 @@ RMSE_BSi_3F <- RMSE(mu_bar_USA, mu_bar_hat_BSi_3F)
 ## - Step 1 -  Get fitted survival probabilities
 S_xt_BSi_3F <- matrix(NA, length(AgeRange),length(CohortRange))
 
-for(i in 1:ncol(S_xc)){
-  for(j in 1:nrow(S_xc)){
+for(i in 1:ncol(S_xt)){
+  for(j in 1:nrow(S_xt)){
     S_xt_BSi_3F[j,i] <- exp(-mu_bar_hat_BSi_3F[j,i] * j)
   }
 }
