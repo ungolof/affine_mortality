@@ -9,7 +9,7 @@
 # - Blackburn-Sherris model with independent factors
 ## - Use of the DNK parameter estimates as starting values set by default
 it_f_opt_BSi <- function(mu_bar, x0=c(6.960591e-03, 9.017154e-03, 5.091784e-03), delta=c(-1.305830e-06, -5.220474e-02, -1.013210e-01), kappa=c(1.162624e-02, 6.787268e-02, 5.061539e-03), sigma=exp(c(-6.806310, -6.790270, -7.559145)), r=exp(c( -3.327060e+01, -6.086479e-01, -1.553156e+01)), max_iter=10, tol_lik=10, opt_met = 'Nelder-Mead'){
-  par_est_table <- matrix(NA, nrow=n_iter, ncol=length(c(x0, delta, kappa, sigma, r)) + 2)
+  par_est_table <- matrix(NA, nrow=max_iter, ncol=length(c(x0, delta, kappa, sigma, r)) + 2)
   colnames(par_est_table) <- c(sprintf("x0_%d", c(1:n_factors)), sprintf("delta_%d", c(1:n_factors)), sprintf("kappa_%d", c(1:n_factors)), sprintf("sigma_%d", c(1:n_factors)), c("r1", "r2", "rc"), "log_lik", "Code")
   
   l_sigma <- log(sigma)
@@ -72,7 +72,7 @@ f_opt_BSi_LS <- function(mu_bar, x0=c(6.960591e-03, 9.017154e-03, 5.091784e-03),
 ## - Use of the DNK parameter estimates as starting values set by default
 it_f_opt_BSd_3F <- function(mu_bar, x0=c(2.191140e-03, -8.855686e-03, 2.711990e-02), delta=c(-5.175933e-02, 4.578315e-01, -5.175921e-02, -2.299199e-01, 1.383445e-02, -6.310253e-02), kappa=c(3.455255e-02, 1.075876e-02, 1.000030e-02), sigma_dg=c(6.789215e-04, 2.036748e-03, 1.875928e-03), Sigma_cov=c(-1.260778e-06, 1.194974e-06, -3.718267e-06), r=exp(c(-3.345631e+01, -6.015438e-01, -1.557244e+01)), max_iter=10, tol_lik=10, opt_met = 'Nelder-Mead'){
   # - Table parameter estimation construction
-  par_est_table <- matrix(NA, nrow=n_iter, ncol=length(c(x0, delta, kappa, sigma_dg, Sigma_cov, r)) + 2)
+  par_est_table <- matrix(NA, nrow=max_iter, ncol=length(c(x0, delta, kappa, sigma_dg, Sigma_cov, r)) + 2)
   colnames(par_est_table) <- c(sprintf("x0_%d", c(1:n_factors)), "delta_11", 'delta_21', 'delta_22', 'delta_31', 'delta_32', 'delta_33', sprintf("kappa_%d", c(1:n_factors)), 'sigma_11', 'sigma_21', 'sigma_22', 'sigma_31', 'sigma_32', 'sigma_33', c("r1", "r2", "rc"), "log_lik", 'Code')
   
   # - Transformation of parameters
@@ -153,7 +153,7 @@ f_opt_BSd_3F_LS <- function(mu_bar, x0=c(2.191140e-03, -8.855686e-03, 2.711990e-
 # - AFNS model with independent factors
 it_f_opt_AFNSi <- function(mu_bar, x0=c(1.091714e-02, 1.002960e-02, -5.990785e-04), delta=-8.304334e-02, kappa=c(9.154603e-03, 1.067658e-02, 7.439715e-03), sigma=exp(c(-7.318991, -7.535594, -8.456025)), r=exp(c(-3.371775e+01, -5.887962e-01, -1.548729e+01)), max_iter=10, tol_lik=10, opt_met = 'Nelder-Mead'){
   n_factors <- 3
-  par_est_table <- matrix(NA, nrow=n_iter, ncol=length(c(x0, delta, kappa, sigma, r)) + 2)
+  par_est_table <- matrix(NA, nrow=max_iter, ncol=length(c(x0, delta, kappa, sigma, r)) + 2)
   colnames(par_est_table) <- c('x0_L', 'x0_S', 'x0_C', "delta", 'kappa_L', 'kappa_S', 'kappa_C', 'sigma_L', 'sigma_S', 'sigma_C', c("r1", "r2", "rc"), "log_lik", "Code")
   
   l_sigma <- log(sigma)
@@ -215,7 +215,7 @@ f_opt_AFNSi_LS <- function(mu_bar, x0=c(1.091714e-02, 1.002960e-02, -5.990785e-0
 # - AFNS model with dependent factors
 it_f_opt_AFNSd <- function(mu_bar, x0=c(9.582516e-03, 1.094110e-02, -1.503155e-03), delta=-7.487697e-02, kappa=c(1.389363e-02, 3.525542e-03, 3.004883e-03), sigma_dg=c(3.215422e-03, 2.625474e-03, 1.164715e-03), Sigma_cov=c(-8.328978e-06, -3.685028e-06, 3.036376e-06), r=exp(c(-3.335725e+01, -6.066149e-01, -1.552061e+01)), max_iter=10, tol_lik=10, opt_met = 'Nelder-Mead'){
   # - Table parameter estimation construction
-  par_est_table <- matrix(NA, nrow=n_iter, ncol=length(c(x0, delta, kappa, sigma_dg, Sigma_cov, r)) + 2)
+  par_est_table <- matrix(NA, nrow=max_iter, ncol=length(c(x0, delta, kappa, sigma_dg, Sigma_cov, r)) + 2)
   colnames(par_est_table) <- c('x0_L', 'x0_S', 'x0_C', "delta", 'kappa_L', 'kappa_S', 'kappa_C', 'sigma_L', 'sigma_LS', 'sigma_S', 'sigma_LC', 'sigma_SC', 'sigma_C', c("r1", "r2", "rc"), "log_lik", 'Code')
   
   # - Transformation of parameters
@@ -295,7 +295,7 @@ f_opt_AFNSd_LS <- function(mu_bar, x0=c(9.582516e-03, 1.094110e-02, -1.503155e-0
 
 # - CIR model
 it_f_opt_CIR <- function(mu_bar, x0=c(1.611524e-03, 5.763081e-03, 1.208483e-02), delta=c(-0.12379389, -0.06208546, -0.08131285), kappa=c(1.665062e-16, 3.477558e-01, 4.619791e-02), sigma=c(4.143351e-03, 6.242207e-02, 1.797287e-02), theta_Q = c(9.322613e-10, 8.457568e-03, 4.661882e-10), theta_P=c(0.01, 3.792994e-03, 6.272185e-03), r=c(2.952881e-15, 5.445661e-01, 1.493218e-07), max_iter=10, tol_lik=10, opt_met = 'Nelder-Mead'){
-  par_est_table <- matrix(NA, nrow=n_iter, ncol=length(c(x0, delta, kappa, sigma, theta_Q, theta_P, r)) + 2)
+  par_est_table <- matrix(NA, nrow=max_iter, ncol=length(c(x0, delta, kappa, sigma, theta_Q, theta_P, r)) + 2)
   colnames(par_est_table) <- c(sprintf("x0_%d", c(1:n_factors)), sprintf("delta_%d", c(1:n_factors)), sprintf("kappa_%d", c(1:n_factors)), sprintf("sigma_%d", c(1:n_factors)), sprintf("theta_Q_%d", c(1:n_factors)), sprintf("theta_P_%d", c(1:n_factors)),  c("r1", "r2", "rc"), "log_lik", "Code")
   
   l_x0 <- log(x0)
