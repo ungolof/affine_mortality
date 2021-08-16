@@ -88,7 +88,7 @@ S_t_BSd_3F_proj <- function(x0, delta, kappa, sigma, r, mu_bar, proj_years){
 }
 
 # - AFNS independent factor model
-S_t_AFNSi_proj <- function(x0, delta, kappa, sigma, r, mu_bar, mu_bar, proj_years){
+S_t_AFNSi_proj <- function(x0, delta, kappa, sigma, r, mu_bar, proj_years){
   
   n_factors <- 3
   n_ages <- nrow(mu_bar)
