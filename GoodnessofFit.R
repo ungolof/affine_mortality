@@ -247,6 +247,8 @@ residuals_01 <- function(observed, estimated){
 # - Standardized residuals
 residuals_std_BSi <- function(observed, x0, delta, kappa, sigma, r){
   n_factors <- length(kappa)
+  n_ages <- nrow(observed)
+  B_tT <- matrix(NA, n_ages, n_factors)
   
   l_r1 <- log(r[1])
   l_r2 <- log(r[2])
@@ -273,6 +275,8 @@ residuals_std_BSi <- function(observed, x0, delta, kappa, sigma, r){
 
 residuals_std_BSd_3F <- function(observed, x0, delta, kappa, sigma_dg, Sigma_cov, r){
   n_factors <- 3
+  n_ages <- nrow(observed)
+  B_tT <- matrix(NA, n_ages, n_factors)
   
   l_r1 <- log(r[1])
   l_r2 <- log(r[2])
@@ -319,6 +323,8 @@ residuals_std_BSd_3F <- function(observed, x0, delta, kappa, sigma_dg, Sigma_cov
 
 residuals_std_AFNSi <- function(observed, x0, delta, kappa, sigma, r){
   n_factors <- 3
+  n_ages <- nrow(observed)
+  B_tT <- matrix(NA, n_ages, n_factors)
   
   l_r1 <- log(r[1])
   l_r2 <- log(r[2])
@@ -346,6 +352,8 @@ residuals_std_AFNSi <- function(observed, x0, delta, kappa, sigma, r){
 
 residuals_std_AFNSd <- function(observed, delta, kappa, sigma_dg, Sigma_cov, r){
   n_factors <- 3
+  n_ages <- nrow(observed)
+  B_tT <- matrix(NA, n_ages, n_factors)
   
   l_r1 <- log(r[1])
   l_r2 <- log(r[2])
@@ -391,7 +399,9 @@ residuals_std_AFNSd <- function(observed, delta, kappa, sigma_dg, Sigma_cov, r){
 
 residuals_std_CIR <- function(observed, x0, delta, kappa, sigma, theta_Q, theta_P, r){
   n_factors <- length(kappa)
-
+  n_ages <- nrow(observed)
+  B_tT <- matrix(NA, n_ages, n_factors)
+  
   l_r1 <- log(r[1])
   l_r2 <- log(r[2])
   l_rc <- log(r[3])
@@ -448,6 +458,17 @@ avg2rates <- function(mu_bar){
   }
   return(mu)
 }
+
+
+
+
+
+
+
+
+
+
+
 
 
 
