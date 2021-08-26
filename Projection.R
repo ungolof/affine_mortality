@@ -9,6 +9,7 @@ S_t_BSi_proj <- function(x0, delta, kappa, sigma, r, mu_bar, proj_years){
   n_ages <- nrow(mu_bar)
   n_years <- ncol(mu_bar)
   
+  A_tT <- matrix(0, n_ages, 1)
   B_tT <- matrix(NA, n_ages, n_factors)
   X_t_last <- KF_BSi_uKD(x0, delta, kappa, sigma, r, mu_bar)$X_t[,n_years+1]
 
@@ -33,6 +34,7 @@ S_t_BSd_2F_proj <- function(x0, delta, kappa, sigma, r, mu_bar, proj_years){
   n_ages <- nrow(mu_bar)
   n_years <- ncol(mu_bar)
   
+  A_tT <- matrix(0, n_ages, 1)
   B_tT <- matrix(NA, n_ages, n_factors)
   X_t_last <- KF_BSd_2F_uKD(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar)$X_t[,n_years+1]
   
@@ -63,6 +65,7 @@ S_t_BSd_3F_proj <- function(x0, delta, kappa, sigma, r, mu_bar, proj_years){
   n_ages <- nrow(mu_bar)
   n_years <- ncol(mu_bar)
   
+  A_tT <- matrix(0, n_ages, 1)
   B_tT <- matrix(NA, n_ages, n_factors)
   X_t_last <- KF_BSd_3F_uKD(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar)$X_t[,n_years+1]
   
@@ -94,6 +97,7 @@ S_t_AFNSi_proj <- function(x0, delta, kappa, sigma, r, mu_bar, proj_years){
   n_ages <- nrow(mu_bar)
   n_years <- ncol(mu_bar)
   
+  A_tT <- matrix(0, n_ages, 1)
   B_tT <- matrix(NA, n_ages, n_factors)
   X_t_last <- KF_AFNSi_uKD(x0, delta, kappa, sigma, r, mu_bar)$X_t[,n_years+1]
   
@@ -118,6 +122,7 @@ S_t_AFNSd_proj <- function(x0, delta, kappa, sigma, r, mu_bar, proj_years){
   n_ages <- nrow(mu_bar)
   n_years <- ncol(mu_bar)
   
+  A_tT <- matrix(0, n_ages, 1)
   B_tT <- matrix(NA, n_ages, n_factors)
   X_t_last <- KF_AFNSd_uKD(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar)$X_t[,n_years+1]
   
@@ -149,6 +154,7 @@ S_t_CIR_proj <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, p
   n_ages <- nrow(mu_bar)
   n_years <- ncol(mu_bar)
   
+  A_tT <- matrix(0, n_ages, 1)
   B_tT <- matrix(NA, n_ages, n_factors)
   X_t_last <- KF_CIR_uKD(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar)$X_t[,n_years+1]
   
@@ -165,6 +171,8 @@ S_t_CIR_proj <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, p
   }
   return(S_prj)
 }
+
+
 
 
 
