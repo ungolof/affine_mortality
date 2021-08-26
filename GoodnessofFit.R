@@ -230,8 +230,8 @@ MAPE_row <- function(observed, estimated){
 # - Residuals
 residuals_f <- function(observed, estimated){
   residuals <- observed - estimated
-  colnames(residuals) <- colnames(mu_bar)
-  rownames(residuals) <- rownames(mu_bar)
+  colnames(residuals) <- colnames(observed)
+  rownames(residuals) <- rownames(observed)
   return(residuals)
 }
 
