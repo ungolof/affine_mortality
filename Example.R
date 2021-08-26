@@ -178,7 +178,7 @@ library(fields)
 res_BSi_3F <- residuals_f(mu_bar_USA, mu_bar_hat_BSi_3F)
 
 ## - 3D Plotting
-persp3D(CohortRange, AgeRange, t(res_BSi), main="", zlab="", xlab="Cohort", ylab="Age", theta = 35, phi = 25, shade = 0.5, 
+persp3D(CohortRange, AgeRange, t(res_BSi_3F), main="", zlab="", xlab="Cohort", ylab="Age", theta = 35, phi = 25, shade = 0.5, 
         axes = T, box=TRUE, nticks=5, ticktype="detailed", xlim=c(1880,1920), ylim = c(50,100), zlim=c(-0.001,0.01))
 
 # - 0-1 Residuals
