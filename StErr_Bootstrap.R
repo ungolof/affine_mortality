@@ -189,6 +189,7 @@ nLL_BSi_uKD_BS <- function(vdParameters, mu_bar_BS){
 
 CovEst_BS_BSi <- function(x0, delta, kappa, sigma, r, mu_bar, n_BS=500, t_ex = 4){
   par_table_BSi <- matrix(NA, n_BS, length(c(delta, kappa, sigma, r)))
+  n_factors <- length(kappa)
   colnames(par_table_BSi) <- c(sprintf("delta_%d", c(1:n_factors)), sprintf("kappa_%d", c(1:n_factors)), sprintf("sigma_%d", c(1:n_factors)), c("r1", "r2", "rc"))
   
   res_table <- matrix(NA, n_ages, n_years)
@@ -468,6 +469,7 @@ CovEst_BS_BSd_3F <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, n
   par_table_BSd <- matrix(NA, n_BS, length(c(delta, kappa, sigma_dg, Sigma_cov, r)))
   colnames(par_table_BSd) <- c("delta_11", 'delta_21', 'delta_22', 'delta_31', 'delta_32', 'delta_33', sprintf("kappa_%d", c(1:n_factors)), 'sigma_11', 'sigma_21', 'sigma_22', 'sigma_31', 'sigma_32', 'sigma_33', c("r1", "r2", "rc"))
   res_table <- matrix(NA, n_ages, n_years)
+  n_factors <- 3
   
   # - 4) Parameter estimation
   ## - 4.1) Get filtered estimates
@@ -703,6 +705,7 @@ nLL_AFNSi_uKD_BS <- function(vdParameters, mu_bar_BS){
 CovEst_BS_AFNSi <- function(x0, delta, kappa, sigma, r, mu_bar, n_BS=500, t_ex = 4){
   par_table_AFNSi <- matrix(NA, n_BS, length(c(delta, kappa, sigma, r)))
   colnames(par_table_AFNSi) <- c("delta", sprintf("kappa_%s", c("L", 'S', 'C')), sprintf("sigma_%s", c("L", 'S', 'C')), c("r1", "r2", "rc"))
+  n_factors <- 3
   
   res_table <- matrix(NA, n_ages, n_years)
   
@@ -977,6 +980,7 @@ CovEst_BS_AFNSd <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, n_
   par_table_AFNSd <- matrix(NA, n_BS, length(c(delta, kappa, sigma_dg, Sigma_cov, r)))
   colnames(par_table_AFNSd) <- c("delta", sprintf("kappa_%d", c(1:n_factors)), 'sigma_L', 'sigma_LS', 'sigma_S', 'sigma_LC', 'sigma_SC', 'sigma_C', c("r1", "r2", "rc"))
   res_table <- matrix(NA, n_ages, n_years)
+  n_factors <- 3
   
   # - 4) Parameter estimation
   ## - 4.1) Get filtered estimates
@@ -1222,6 +1226,8 @@ nLL_CIR_uKD_BS <- function(vdParameters, mu_bar_BS){
 
 CovEst_BS_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, n_BS=500, t_ex = 4){
   par_table_CIR <- matrix(NA, n_BS, length(c(delta, kappa, sigma, theta_Q, theta_P, r)))
+  n_factors <- length(kappa)
+  
   colnames(par_table_CIR) <- c(sprintf("delta_%d", c(1:n_factors)), sprintf("kappa_%d", c(1:n_factors)), sprintf("sigma_%d", c(1:n_factors)), sprintf("theta_Q_%d", c(1:n_factors)), sprintf("theta_P_%d", c(1:n_factors)), c("r1", "r2", "rc"))
   
   res_table <- matrix(NA, n_ages, n_years)
@@ -1269,6 +1275,7 @@ CovEst_BS_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, 
   
   return(list(Cov = cov_pe, St.err = serr_pe))
 }
+
 
 
 
