@@ -13,6 +13,9 @@ mu_bar_hat_BSi <- function(x0, delta, kappa, sigma, r, mu_bar){
   X_t <- KF_outcome$X_t
   
   mu_bar_hat <- matrix(NA, n_ages, n_years)
+  rownames(mu_bar_hat) <- AgeRange
+  colnames(mu_bar_hat) <- CohortRange
+    
   ## - Factor loading matrices
   A_tT <- matrix(0, n_ages, 1)
   B_tT <- matrix(NA, n_ages, n_factors)
@@ -38,6 +41,9 @@ mu_bar_hat_BSd_2F <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar){
   X_t <- KF_outcome$X_t
   
   mu_bar_hat <- matrix(NA, n_ages, n_years)
+  rownames(mu_bar_hat) <- AgeRange
+  colnames(mu_bar_hat) <- CohortRange
+  
   ## - Factor loading matrices
   A_tT <- matrix(0, n_ages, 1)
   B_tT <- matrix(NA, n_ages, n_factors)
@@ -69,6 +75,9 @@ mu_bar_hat_BSd_3F <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar){
   X_t <- KF_outcome$X_t
   
   mu_bar_hat <- matrix(NA, n_ages, n_years)
+  rownames(mu_bar_hat) <- AgeRange
+  colnames(mu_bar_hat) <- CohortRange
+  
   ## - Factor loading matrices
   A_tT <- matrix(0, n_ages, 1)
   B_tT <- matrix(NA, n_ages, n_factors)
@@ -100,6 +109,9 @@ mu_bar_hat_AFNSi <- function(x0, delta, kappa, sigma, r, mu_bar){
   X_t <- KF_outcome$X_t
   
   mu_bar_hat <- matrix(NA, n_ages, n_years)
+  rownames(mu_bar_hat) <- AgeRange
+  colnames(mu_bar_hat) <- CohortRange
+  
   ## - Factor loading matrices
   A_tT <- matrix(0, n_ages, 1)
   B_tT <- matrix(NA, n_ages, n_factors)
@@ -123,6 +135,9 @@ mu_bar_hat_AFNSd <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar){
   X_t <- KF_outcome$X_t
   
   mu_bar_hat <- matrix(NA, n_ages, n_years)
+  rownames(mu_bar_hat) <- AgeRange
+  colnames(mu_bar_hat) <- CohortRange
+  
   ## - Factor loading matrices
   A_tT <- matrix(0, n_ages, 1)
   B_tT <- matrix(NA, n_ages, n_factors)
@@ -153,6 +168,9 @@ mu_bar_hat_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar)
   X_t <- KF_outcome$X_t
   
   mu_bar_hat <- matrix(NA, n_ages, n_years)
+  rownames(mu_bar_hat) <- AgeRange
+  colnames(mu_bar_hat) <- CohortRange
+  
   ## - Factor loading matrices
   A_tT <- matrix(0, n_ages, 1)
   B_tT <- matrix(NA, n_ages, n_factors)
@@ -430,6 +448,9 @@ avg2rates <- function(mu_bar){
   }
   return(mu)
 }
+
+
+
 
 
 
