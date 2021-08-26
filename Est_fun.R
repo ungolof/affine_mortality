@@ -1,6 +1,6 @@
 library(HMDHFDplus)
 library(plot3D)
-
+library(expm)
 
 #========================================= Functions for the continuous time affine models ========================
 
