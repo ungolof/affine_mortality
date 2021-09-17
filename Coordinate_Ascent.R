@@ -378,7 +378,7 @@ co_asc_AFNSi <- function(mu_bar, x0=c(1.091714e-02, 1.002960e-02, -5.990785e-04)
   
   # - Matrix for parameter estimates storage
   n_factors <- 3
-  CA_par <- matrix(NA, nrow=max_iter, ncol=length(c(x0, delta, kappa, l_sigma, r))+1)
+  CA_par <- matrix(NA, nrow=max_iter, ncol=length(c(x0, delta, kappa, sigma, r))+1)
   colnames(CA_par) <- c('x0_L', 'x0_S', 'x0_C', "delta", 'kappa_L', 'kappa_S', 'kappa_C', 'sigma_L', 'sigma_S', 'sigma_C', c("r1", "r2", "rc"), "log_lik")
   
   # - Initialize log-likelihood
