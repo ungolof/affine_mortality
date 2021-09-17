@@ -410,8 +410,8 @@ co_asc_AFNSi <- function(mu_bar, x0=c(1.091714e-02, 1.002960e-02, -5.990785e-04)
     l_r_par <- l_r_opt_AFNSi_KD$par
     
     # - Store par_est
-    CA_par[iter_count,1:length(c(x0_par, delta_par, kappa_par, l_sigma_par, r_par))] <- c(x0_par, delta_par, kappa_par, exp(l_sigma_par), exp(l_r_par))
-    CA_par[iter_count,length(c(x0_par, delta_par, kappa_par, l_sigma_par, r_par))+1] <- - 0.5 * nLL_AFNSi_uKD_CA(x0_par, delta_par, kappa_par, l_sigma_par, l_r_par, mu_bar) - 0.5 * nrow(mu_bar) * ncol(mu_bar)
+    CA_par[iter_count,1:length(c(x0_par, delta_par, kappa_par, l_sigma_par, l_r_par))] <- c(x0_par, delta_par, kappa_par, exp(l_sigma_par), exp(l_r_par))
+    CA_par[iter_count,length(c(x0_par, delta_par, kappa_par, l_sigma_par, l_r_par))+1] <- - 0.5 * nLL_AFNSi_uKD_CA(x0_par, delta_par, kappa_par, l_sigma_par, l_r_par, mu_bar) - 0.5 * nrow(mu_bar) * ncol(mu_bar)
 
     if (abs(nLL_AFNSi_uKD_CA(x0_par, delta_par, kappa_par, l_sigma_par, l_r_par) - neg_loglikelihood) < tol_lik | (iter_count==max_iter) ){
       break
@@ -537,8 +537,8 @@ co_asc_AFNSd <- function(mu_bar, x0=c(9.582516e-03, 1.094110e-02, -1.503155e-03)
     l_r_par <- l_r_opt_AFNSd_KD$par
     
     # - Store par_est
-    CA_par[iter_count,1:length(c(x0, delta, kappa, sigma_dg, Sigma_cov, l_r))] <- c(x0_par, delta_par, kappa_par, parest2cov(dg_l_Sigma_chol_par, odg_Sigma_chol_par), exp(l_r_par))
-    CA_par[iter_count,length(c(x0, delta, kappa, sigma_dg, Sigma_cov, l_r))+1] <- - 0.5 * nLL_AFNSd_uKD_CA(x0_par, delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par, mu_bar) - 0.5 * nrow(mu_bar) * ncol(mu_bar)
+    CA_par[iter_count,1:length(c(x0, delta, kappa, sigma_dg, Sigma_cov, r))] <- c(x0_par, delta_par, kappa_par, parest2cov(dg_l_Sigma_chol_par, odg_Sigma_chol_par), exp(l_r_par))
+    CA_par[iter_count,length(c(x0, delta, kappa, sigma_dg, Sigma_cov, r))+1] <- - 0.5 * nLL_AFNSd_uKD_CA(x0_par, delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par, mu_bar) - 0.5 * nrow(mu_bar) * ncol(mu_bar)
     
     
     if (abs(nLL_AFNSd_uKD_CA(x0_par, delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par) - neg_loglikelihood) < tol_lik | (iter_count==n_iter) ){
