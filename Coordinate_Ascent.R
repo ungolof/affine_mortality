@@ -15,8 +15,8 @@ nLL_BSi_uKD_CA <- function(x0, delta, kappa, l_sigma, l_r, mu_bar){
   n_ages <- nrow(mu_bar)   # - Number of ages
   n_years <- ncol(mu_bar)  # - Number of years
   
-  v_ti <- mu_bar
-  F_ti <- mu_bar
+  v_ti <- matrix(0, nrow(mu_bar), ncol(mu_bar))
+  F_ti <- matrix(1, nrow(mu_bar), ncol(mu_bar))
   
   ## - Factor loading matrices
   A_tT <- matrix(0, n_ages, 1)
@@ -126,8 +126,8 @@ nLL_BSd_2F_uKD_CA <- function(x0, delta, kappa, dg_l_Sigma_chol, odg_Sigma_chol,
   
   delta_matrix <- low_trg_fill(delta)
   
-  v_ti <- mu_bar
-  F_ti <- mu_bar
+  v_ti <- matrix(0, nrow(mu_bar), ncol(mu_bar))
+  F_ti <- matrix(1, nrow(mu_bar), ncol(mu_bar))
   
   ## - Factor loading matrices
   A_tT <- matrix(0, n_ages, 1)
@@ -198,8 +198,8 @@ nLL_BSd_3F_uKD_CA <- function(x0, delta, kappa, dg_l_Sigma_chol, odg_Sigma_chol,
   
   delta_matrix <- low_trg_fill(delta)
   
-  v_ti <- mu_bar
-  F_ti <- mu_bar
+  v_ti <- matrix(0, nrow(mu_bar), ncol(mu_bar))
+  F_ti <- matrix(1, nrow(mu_bar), ncol(mu_bar))
   
   ## - Factor loading matrices
   A_tT <- matrix(0, n_ages, 1)
@@ -328,8 +328,8 @@ nLL_AFNSi_uKD_CA <- function(x0, delta, kappa, l_sigma, l_r, mu_bar){
   n_ages <- nrow(mu_bar)   # - Number of ages
   n_years <- ncol(mu_bar)  # - Number of years
   
-  v_ti <- mu_bar
-  F_ti <- mu_bar
+  v_ti <- matrix(0, nrow(mu_bar), ncol(mu_bar))
+  F_ti <- matrix(1, nrow(mu_bar), ncol(mu_bar))
   
   ## - Factor loading matrices
   A_tT <- matrix(0, n_ages, 1)
@@ -438,8 +438,8 @@ nLL_AFNSd_uKD_CA <- function(x0, delta, kappa, dg_l_Sigma_chol, odg_Sigma_chol, 
   n_ages <- nrow(mu_bar)   # - Number of ages
   n_years <- ncol(mu_bar)  # - Number of years
   
-  v_ti <- mu_bar
-  F_ti <- mu_bar
+  v_ti <- matrix(0, nrow(mu_bar), ncol(mu_bar))
+  F_ti <- matrix(1, nrow(mu_bar), ncol(mu_bar))
   
   ## - Factor loading matrices
   A_tT <- matrix(0, n_ages, 1)
@@ -567,8 +567,8 @@ nLL_CIR_uKD_CA_bd <- function(l_x0, delta, l_kappa, l_sigma, l_theta_Q, l_theta_
   n_ages <- nrow(mu_bar)   # - Number of ages
   n_years <- ncol(mu_bar)  # - Number of years
   
-  v_ti <- mu_bar
-  F_ti <- mu_bar
+  v_ti <- matrix(0, nrow(mu_bar), ncol(mu_bar))
+  F_ti <- matrix(1, nrow(mu_bar), ncol(mu_bar))
   
   ## - Factor loading matrices
   A_tT <- matrix(0, n_ages, 1)
