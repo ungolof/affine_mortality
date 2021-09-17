@@ -99,11 +99,11 @@ co_asc_BSi <- function(mu_bar, x0=c(6.960591e-03, 9.017154e-03, 5.091784e-03), d
     CA_par[iter_count,1:length(c(x0_par, delta_par, kappa_par, l_sigma_par, l_r_par))] <- c(x0_par, delta_par, kappa_par, exp(l_sigma_par), exp(l_r_par))
     CA_par[iter_count,length(c(x0_par, delta_par, kappa_par, l_sigma_par, l_r_par))+1] <- - 0.5 * nLL_BSi_uKD_CA(x0_par, delta_par, kappa_par, l_sigma_par, l_r_par, mu_bar) - 0.5 * nrow(mu_bar) * ncol(mu_bar)
     
-    if (abs(nLL_BSi_uKD_CA(x0_par, delta_par, kappa_par, l_sigma_par, l_r_par) - neg_loglikelihood) < tol_lik | (iter_count==max_iter)){
+    if (abs(nLL_BSi_uKD_CA(x0_par, delta_par, kappa_par, l_sigma_par, l_r_par, mu_bar) - neg_loglikelihood) < tol_lik | (iter_count==max_iter)){
       break
     }else{
       # - Update log-likelihood
-      neg_loglikelihood <- nLL_BSi_uKD_CA(x0_par, delta_par, kappa_par, l_sigma_par, l_r_par)
+      neg_loglikelihood <- nLL_BSi_uKD_CA(x0_par, delta_par, kappa_par, l_sigma_par, l_r_par, mu_bar)
       iter_count <- iter_count + 1
     }
   }
@@ -303,11 +303,11 @@ co_asc_BSd_3F <- function(mu_bar, x0=c(2.191140e-03, -8.855686e-03, 2.711990e-02
     CA_par[iter_count,1:length(c(x0, delta, kappa, sigma_dg, Sigma_cov, r))] <- c(x0_par, delta_par, kappa_par, parest2cov(dg_l_Sigma_chol_par, odg_Sigma_chol_par), exp(l_r_par))
     CA_par[iter_count,length(c(x0, delta, kappa, sigma_dg, Sigma_cov, r))+1] <- -0.5 * nLL_BSd_3F_uKD_CA(x0_par, delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par, mu_bar) - 0.5 * nrow(mu_bar) * ncol(mu_bar)
     
-    if (abs(nLL_BSd_3F_uKD_CA(x0_par, delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par) - neg_loglikelihood) < tol_lik  | (iter_count==n_iter) ){
+    if (abs(nLL_BSd_3F_uKD_CA(x0_par, delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par, mu_bar) - neg_loglikelihood) < tol_lik  | (iter_count==n_iter) ){
       break
     }else{
       # - Update log-likelihood
-      neg_loglikelihood <- nLL_BSd_3F_uKD_CA(x0_par, delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par)
+      neg_loglikelihood <- nLL_BSd_3F_uKD_CA(x0_par, delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par, mu_bar)
       iter_count <- iter_count + 1
     }
   }
@@ -413,11 +413,11 @@ co_asc_AFNSi <- function(mu_bar, x0=c(1.091714e-02, 1.002960e-02, -5.990785e-04)
     CA_par[iter_count,1:length(c(x0_par, delta_par, kappa_par, l_sigma_par, l_r_par))] <- c(x0_par, delta_par, kappa_par, exp(l_sigma_par), exp(l_r_par))
     CA_par[iter_count,length(c(x0_par, delta_par, kappa_par, l_sigma_par, l_r_par))+1] <- - 0.5 * nLL_AFNSi_uKD_CA(x0_par, delta_par, kappa_par, l_sigma_par, l_r_par, mu_bar) - 0.5 * nrow(mu_bar) * ncol(mu_bar)
 
-    if (abs(nLL_AFNSi_uKD_CA(x0_par, delta_par, kappa_par, l_sigma_par, l_r_par) - neg_loglikelihood) < tol_lik | (iter_count==max_iter) ){
+    if (abs(nLL_AFNSi_uKD_CA(x0_par, delta_par, kappa_par, l_sigma_par, l_r_par, mu_bar) - neg_loglikelihood) < tol_lik | (iter_count==max_iter) ){
       break
     }else{
       # - Update log-likelihood
-      neg_loglikelihood <- nLL_AFNSi_uKD_CA(x0_par, delta_par, kappa_par, l_sigma_par, l_r_par)
+      neg_loglikelihood <- nLL_AFNSi_uKD_CA(x0_par, delta_par, kappa_par, l_sigma_par, l_r_par, mu_bar)
       iter_count <- iter_count + 1
     }
   }
@@ -545,7 +545,7 @@ co_asc_AFNSd <- function(mu_bar, x0=c(9.582516e-03, 1.094110e-02, -1.503155e-03)
       break
     }else{
       # - Update log-likelihood
-      neg_loglikelihood <- nLL_AFNSd_uKD_CA(x0_par, delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par)
+      neg_loglikelihood <- nLL_AFNSd_uKD_CA(x0_par, delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par, mu_bar)
       iter_count <- iter_count + 1
     }
   }
@@ -665,11 +665,11 @@ co_asc_CIR <- function(mu_bar, x0=c(1.611524e-03, 5.763081e-03, 1.208483e-02), d
     CA_par[iter_count, length(c(x0, delta, kappa, sigma, theta_Q, theta_P, r))+1] <- -0.5 * nLL_CIR_uKD_CA_bd(l_x0_par, delta_par, l_kappa_par, l_sigma_par, l_theta_Q_par, l_theta_P_par, l_r_par, mu_bar) - 0.5 * nrow(mu_bar) * ncol(mu_bar)
     
     
-    if (abs(nLL_CIR_uKD_CA_bd(l_x0_par, delta_par, l_kappa_par, l_sigma_par, l_theta_Q_par, l_theta_P_par, l_r_par) - neg_loglikelihood) < tol_lik | (iter_count==max_iter) ){
+    if (abs(nLL_CIR_uKD_CA_bd(l_x0_par, delta_par, l_kappa_par, l_sigma_par, l_theta_Q_par, l_theta_P_par, l_r_par, mu_bar) - neg_loglikelihood) < tol_lik | (iter_count==max_iter) ){
       break
     }else{
       # - Update log-likelihood
-      neg_loglikelihood <- nLL_CIR_uKD_CA_bd(l_x0_par, delta_par, l_kappa_par, l_sigma_par, l_theta_Q_par, l_theta_P_par, l_r_par)
+      neg_loglikelihood <- nLL_CIR_uKD_CA_bd(l_x0_par, delta_par, l_kappa_par, l_sigma_par, l_theta_Q_par, l_theta_P_par, l_r_par, mu_bar)
       iter_count <- iter_count + 1
     }
   }
