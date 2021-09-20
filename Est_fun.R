@@ -257,7 +257,7 @@ parest2cov <- function(dg_l_Sigma_chol, odg_Sigma_chol){
   Sigma_diffusion <- Low_Chol %*% t(Low_Chol)
   diag(Sigma_diffusion) <- sqrt(diag(Sigma_diffusion))
   
-  Sigma_el <- rep(0, (length(dg_l_Sigma_chol_par) + length(odg_Sigma_chol)))
+  Sigma_el <- rep(0, (length(dg_l_Sigma_chol) + length(odg_Sigma_chol)))
   count_vec <- 1
   for(row in 1:n_factors){
     for(col in 1:row){
