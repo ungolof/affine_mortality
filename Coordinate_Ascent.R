@@ -541,7 +541,7 @@ co_asc_AFNSd <- function(mu_bar, x0=c(9.582516e-03, 1.094110e-02, -1.503155e-03)
     CA_par[iter_count,length(c(x0, delta, kappa, sigma_dg, Sigma_cov, r))+1] <- - 0.5 * nLL_AFNSd_uKD_CA(x0_par, delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par, mu_bar) - 0.5 * nrow(mu_bar) * ncol(mu_bar)
     
     
-    if (abs(nLL_AFNSd_uKD_CA(x0_par, delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par) - neg_loglikelihood) < tol_lik | (iter_count==n_iter) ){
+    if (abs(nLL_AFNSd_uKD_CA(x0_par, delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par) - neg_loglikelihood) < tol_lik | (iter_count==max_iter) ){
       break
     }else{
       # - Update log-likelihood
