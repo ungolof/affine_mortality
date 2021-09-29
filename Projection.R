@@ -28,7 +28,7 @@ S_t_BSi_proj <- function(x0, delta, kappa, sigma, r, mu_bar, proj_years){
 }
 
 # - Blackburn - Sherris dependent factor model
-S_t_BSd_2F_proj <- function(x0, delta, kappa, sigma, r, mu_bar, proj_years){
+S_t_BSd_2F_proj <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, proj_years){
   
   n_factors <- 2
   n_ages <- nrow(mu_bar)
@@ -59,7 +59,7 @@ S_t_BSd_2F_proj <- function(x0, delta, kappa, sigma, r, mu_bar, proj_years){
   return(S_prj)
 }
 
-S_t_BSd_3F_proj <- function(x0, delta, kappa, sigma, r, mu_bar, proj_years){
+S_t_BSd_3F_proj <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, proj_years){
   
   n_factors <- 3
   n_ages <- nrow(mu_bar)
@@ -116,7 +116,7 @@ S_t_AFNSi_proj <- function(x0, delta, kappa, sigma, r, mu_bar, proj_years){
 }
 
 # - AFNS dependent factor model
-S_t_AFNSd_proj <- function(x0, delta, kappa, sigma, r, mu_bar, proj_years){
+S_t_AFNSd_proj <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, proj_years){
   
   n_factors <- 3
   n_ages <- nrow(mu_bar)
@@ -171,8 +171,6 @@ S_t_CIR_proj <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, p
   }
   return(S_prj)
 }
-
-
 
 
 
