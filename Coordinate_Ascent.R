@@ -303,7 +303,7 @@ co_asc_BSd_3F <- function(mu_bar, x0=c(2.191140e-03, -8.855686e-03, 2.711990e-02
     CA_par[iter_count,1:length(c(x0, delta, kappa, sigma_dg, Sigma_cov, r))] <- c(x0_par, delta_par, kappa_par, parest2cov(dg_l_Sigma_chol_par, odg_Sigma_chol_par), exp(l_r_par))
     CA_par[iter_count,length(c(x0, delta, kappa, sigma_dg, Sigma_cov, r))+1] <- -0.5 * nLL_BSd_3F_uKD_CA(x0_par, delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par, mu_bar) - 0.5 * nrow(mu_bar) * ncol(mu_bar)
     
-    if (abs(nLL_BSd_3F_uKD_CA(x0_par, delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par, mu_bar) - neg_loglikelihood) < tol_lik  | (iter_count==n_iter) ){
+    if (abs(nLL_BSd_3F_uKD_CA(x0_par, delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par, mu_bar) - neg_loglikelihood) < tol_lik  | (iter_count==max_iter) ){
       break
     }else{
       # - Update log-likelihood
@@ -676,14 +676,6 @@ co_asc_CIR <- function(mu_bar, x0=c(1.611524e-03, 5.763081e-03, 1.208483e-02), d
   
   return(list(par_est = list(x0=CA_par[iter_count,1:n_factors], delta=CA_par[iter_count,((n_factors + 1):(n_factors*2))], kappa=CA_par[iter_count,((n_factors*2 + 1):(n_factors*3))], sigma=CA_par[iter_count,((n_factors*3 + 1):(n_factors*4))], theta_Q=CA_par[iter_count,((n_factors*4 + 1):(n_factors*5))], theta_P=CA_par[iter_count,((n_factors*5 + 1):(n_factors*6))], r1=CA_par[iter_count,(n_factors*6 + 1)], r2=CA_par[iter_count,(n_factors*6 + 2)], rc=CA_par[iter_count,(n_factors*6 + 3)]), neg_log_lik = CA_par[iter_count,length(c(x0, delta, kappa, sigma, theta_Q, theta_P, r))+1], CA_table = CA_par[1:iter_count,]))
 }
-
-
-
-
-
-
-
-
 
 
 
