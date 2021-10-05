@@ -72,11 +72,11 @@ f_opt_BSi_LS <- function(mu_bar, x0=c(6.960591e-03, 9.017154e-03, 5.091784e-03),
 # - Blackburn-Sherris model with three dependent factors
 ## - Use of the DNK parameter estimates as starting values set by default
 it_f_opt_BSd_3F <- function(mu_bar, x0=c(2.191140e-03, -8.855686e-03, 2.711990e-02), delta=c(-5.175933e-02, 4.578315e-01, -5.175921e-02, -2.299199e-01, 1.383445e-02, -6.310253e-02), kappa=c(3.455255e-02, 1.075876e-02, 1.000030e-02), sigma_dg=c(6.789215e-04, 2.036748e-03, 1.875928e-03), Sigma_cov=c(-1.260778e-06, 1.194974e-06, -3.718267e-06), r=exp(c(-3.345631e+01, -6.015438e-01, -1.557244e+01)), max_iter=10, tol_lik=10, opt_met = 'Nelder-Mead'){
+  n_factors <- 3
   # - Table parameter estimation construction
   par_est_table <- matrix(NA, nrow=max_iter, ncol=length(c(x0, delta, kappa, sigma_dg, Sigma_cov, r)) + 2)
   colnames(par_est_table) <- c(sprintf("x0_%d", c(1:n_factors)), "delta_11", 'delta_21', 'delta_22', 'delta_31', 'delta_32', 'delta_33', sprintf("kappa_%d", c(1:n_factors)), 'sigma_11', 'sigma_21', 'sigma_22', 'sigma_31', 'sigma_32', 'sigma_33', c("r1", "r2", "rc"), "log_lik", 'Code')
-  n_factors <- 3
-  
+
   # - Transformation of parameters
   dg_l_Sigma_chol <- cov2par(c(sigma_dg^2, Sigma_cov))$dg_l_Sigma_chol
   odg_Sigma_chol <- cov2par(c(sigma_dg^2, Sigma_cov))$odg_Sigma_chol
