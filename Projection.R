@@ -34,6 +34,8 @@ S_t_BSd_2F_proj <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, pr
   n_ages <- nrow(mu_bar)
   n_years <- ncol(mu_bar)
   
+  delta_matrix <- low_trg_fill(delta)
+  
   A_tT <- matrix(0, n_ages, 1)
   B_tT <- matrix(NA, n_ages, n_factors)
   X_t_last <- KF_BSd_2F_uKD(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar)$X_t[,n_years+1]
@@ -68,6 +70,8 @@ S_t_BSd_3F_proj <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, pr
   A_tT <- matrix(0, n_ages, 1)
   B_tT <- matrix(NA, n_ages, n_factors)
   X_t_last <- KF_BSd_3F_uKD(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar)$X_t[,n_years+1]
+  
+  delta_matrix <- low_trg_fill(delta)
   
   E_X_t1 <- exp(-kappa * proj_years) * X_t_last
   
@@ -171,6 +175,5 @@ S_t_CIR_proj <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, p
   }
   return(S_prj)
 }
-
 
 
