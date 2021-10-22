@@ -169,7 +169,7 @@ S_t_CIR_proj <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, p
   }
   summatory <- rowSums(matrix_sum)
   
-  E_X_t1 <- exp(-kappa * proj_years) + theta_P * (1 - exp(-kappa)) * summatory #exp(-kappa) * X_t_last + theta_P * (1 - exp(-kappa)) # - FIX THE RECURSION TO GENERALIZE
+  E_X_t1 <- X_t_last * exp(-kappa * proj_years) + theta_P * (1 - exp(-kappa)) * summatory #exp(-kappa) * X_t_last + theta_P * (1 - exp(-kappa)) # - FIX THE RECURSION TO GENERALIZE
   
   S_prj <- matrix(NA, n_ages, 1)
   mu_hat_prj <- matrix(NA, n_ages, 1)
