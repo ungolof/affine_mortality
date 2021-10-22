@@ -162,7 +162,14 @@ S_t_CIR_proj <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, p
   B_tT <- matrix(NA, n_ages, n_factors)
   X_t_last <- KF_CIR_uKD(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar)$X_t[,n_years+1]
   
-  E_X_t1 <- exp(-kappa * proj_years) + theta_P * (1 - exp(-kappa)) * sum(exp(-kappa * c(0:(proj_years-1)))) #exp(-kappa) * X_t_last + theta_P * (1 - exp(-kappa)) # - FIX THE RECURSION TO GENERALIZE
+  # - Partial sum from j=0 to (proj years - 1)
+  matrix_sum <- matrix(1, n_factors, proj_years)
+  for(year in 1:proj_years){
+    matrix_sum[,year] <- exp(-(year-1) * kappa)
+  }
+  summatory <- rowSums(matrix_sum)
+  
+  E_X_t1 <- exp(-kappa * proj_years) + theta_P * (1 - exp(-kappa)) * summatory #exp(-kappa) * X_t_last + theta_P * (1 - exp(-kappa)) # - FIX THE RECURSION TO GENERALIZE
   
   S_prj <- matrix(NA, n_ages, 1)
   mu_hat_prj <- matrix(NA, n_ages, 1)
