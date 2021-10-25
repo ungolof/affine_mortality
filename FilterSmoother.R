@@ -521,7 +521,7 @@ KF_CIR_uKD <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar){
   # - Setting H (covariance of measurement error - indep. among ages)
   H <- meas_err_BS(r_1, r_2, r_c)
   
-  x_ti <- exp(l_x0)
+  x_ti <- x0
   P_ti <- 1e-10 * diag(1, n_factors)
   
   for(age in 1:n_ages){    # - scroll over the ages
