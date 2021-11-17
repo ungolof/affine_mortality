@@ -111,6 +111,8 @@ co_asc_BSi <- function(mu_bar, x0=c(6.960591e-03, 9.017154e-03, 5.091784e-03), d
   return(list(par_est = list(x0=CA_par[iter_count,1:n_factors], delta=CA_par[iter_count,((n_factors + 1):(n_factors*2))], kappa=CA_par[iter_count,((n_factors*2 + 1):(n_factors*3))], sigma=CA_par[iter_count,((n_factors*3 + 1):(n_factors*4))], r1=CA_par[iter_count,(n_factors*4 + 1)], r2=CA_par[iter_count,(n_factors*4 + 2)], rc=CA_par[iter_count,(n_factors*4 + 3)]), neg_log_lik = CA_par[iter_count,length(c(x0, delta, kappa, sigma, r))+1], CA_table = CA_par[1:iter_count,]))
 }
 
+
+
 #================== - BS dependent Coordinate ascent algorithm - =========================
 
 nLL_BSd_2F_uKD_CA <- function(x0, delta, kappa, dg_l_Sigma_chol, odg_Sigma_chol, l_r, mu_bar){
@@ -553,6 +555,251 @@ co_asc_AFNSd <- function(mu_bar, x0=c(9.582516e-03, 1.094110e-02, -1.503155e-03)
   return(list(par_est = list(x0=CA_par[iter_count,c(1:3)], delta=CA_par[iter_count,4], kappa=CA_par[iter_count,c(5:7)], Sigma=list(sigma_L = CA_par[iter_count,8], sigma_LS = CA_par[iter_count,9], sigma_S = CA_par[iter_count,10], sigma_LC = CA_par[iter_count,11], sigma_SC = CA_par[iter_count,12], sigma_C = CA_par[iter_count,13]), r1=CA_par[iter_count,14], r2=CA_par[iter_count,15], rc=CA_par[iter_count,16]), neg_log_lik = CA_par[iter_count,length(c(x0, delta, kappa, sigma_dg, Sigma_cov, r))+1], CA_table = CA_par[1:iter_count,]))
 }
 
+#================================== - AFNS independent Coordinate ascent algorithm -=====================================
+
+nLL_AFGNSi_uKD_CA <- function(x0, delta1, delta2, kappa, l_sigma, l_r, mu_bar){
+  
+  r_1 <- l_r[1]
+  r_2 <- l_r[2]
+  r_c <- l_r[3]
+  
+  n_factors <- 5
+  
+  n_ages <- nrow(mu_bar)   # - Number of ages
+  n_years <- ncol(mu_bar)  # - Number of years
+  
+  v_ti <- matrix(0, nrow(mu_bar), ncol(mu_bar))
+  F_ti <- matrix(1, nrow(mu_bar), ncol(mu_bar))
+  
+  ## - Factor loading matrices
+  A_tT <- matrix(0, n_ages, 1)
+  B_tT <- matrix(NA, n_ages, n_factors)
+  R <- matrix(0, n_factors, n_factors) # - Factor covariance
+  
+  # - Initialize X and Sigma
+  x_ti <- x0 #init_X
+  P_ti <- 1e-10 * diag(1, n_factors)
+  
+  for(age in 1:n_ages){    # - scroll over the ages
+    A_tT[age,1] <- A_AFGNSi(age, exp(l_sigma), delta1, delta2)  
+    B_tT[age,] <- c(B_AFNS(age,delta1)[c(1,2)], B_AFNS(age,delta2)[2], B_AFNS(age,delta1)[3], B_AFNS(age,delta2)[3])
+  }
+  
+  Phi <- diag(exp(-kappa), n_factors) # K_p <- diag(kappa, 2) ## exp(-K_p)
+  R <- diag(((exp(l_sigma*2)) / (2 * kappa)) * (1 - exp(-2 * kappa)), n_factors)
+  
+  for(t in 1:n_years){
+    
+    # - First observation
+    x_ti <- Phi %*% x_ti    # - x_{1,t}
+    P_ti <- Phi %*% P_ti %*% t(Phi) + R     # - P_{1,t}
+    v_ti[1,t] <- mu_bar[1,t] - A_tT[1] - B_tT[1,] %*% x_ti
+    F_ti[1,t] <- B_tT[1,] %*% P_ti %*% B_tT[1,] + exp(r_c) + exp(r_1 + exp(r_2)) 
+    
+    for(i in 2:n_ages){
+      x_ti <- x_ti + P_ti %*% B_tT[i-1,] %*% (1 / F_ti[i-1,t]) %*% v_ti[i-1,t] 
+      
+      # - Joseph formula univariate
+      K_ti <- P_ti %*% B_tT[i-1,] / F_ti[i-1,t]
+      P_ti <- (diag(1, n_factors) - K_ti %*% B_tT[i-1,]) %*% P_ti %*% t(diag(1, n_factors) - K_ti %*% B_tT[i-1,]) + K_ti %*% (exp(r_c) + exp(r_1) * sum(exp(exp(r_2) * c(1:(i-1)))) / (i-1)) %*% t(K_ti) 
+      
+      # - log-likelihood values from Koopman and Durbin
+      F_ti[i,t] <- B_tT[i,] %*% P_ti %*% B_tT[i,] + exp(r_c) + exp(r_1) * sum(exp(exp(r_2) * c(1:i))) / i 
+      v_ti[i,t] <- mu_bar[i,t] - A_tT[i] - B_tT[i,] %*% x_ti
+      
+    }
+  }
+  
+  log_lik <- sum(log(F_ti) + (v_ti^2) / F_ti)
+  return(log_lik)
+}
+
+co_asc_AFGNSi <- function(mu_bar, x0=c(1.091714e-02, 1.002960e-02, 5.990785e-04, 0, 0), delta1=-8.304334e-02, delta2=-0.05, kappa=c(9.154603e-03, 1.067658e-02, 7.439715e-03, 0.003, 0.001), sigma=exp(c(-7.318991, -7.535594, -8.456025, -7, -7)), r=exp(c(-3.371775e+01, -5.887962e-01, -1.548729e+01)), max_iter=200, tol_lik=0.1){
+  
+  # - Matrix for parameter estimates storage
+  n_factors <- 5
+  CA_par <- matrix(NA, nrow=max_iter, ncol=length(c(x0, delta1, delta2, kappa, sigma, r))+1)
+  colnames(CA_par) <- c('x0_L', 'x0_S1', 'x0_S2', 'x0_C1', 'x0_C2', "delta1", 'delta2', 'kappa_L', 'kappa_S1', "kappa_S2", 'kappa_C1', 'kappa_C2', 'sigma_L', 'sigma_S1', 'sigma_S2', 'sigma_C1', 'sigma_C2', c("r1", "r2", "rc"), "log_lik")
+  
+  # - Initialize log-likelihood
+  neg_loglikelihood <- 0
+  
+  x0_par <- x0
+  delta1_par <- delta1
+  delta2_par <- delta2
+  kappa_par <- kappa
+  l_sigma_par <- log(sigma)
+  l_r_par <- log(r)
+  
+  iter_count <- 1
+  
+  repeat{
+    
+    x0_opt_AFGNSi_KD <- optim(x0_par, nLL_AFGNSi_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, kappa=kappa_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    x0_par <- x0_opt_AFGNSi_KD$par
+    
+    delta1_opt_AFGNSi_KD <- optim(delta1_par, nLL_AFGNSi_uKD_CA, mu_bar=mu_bar, x0=x0_par, delta2=delta2_par, kappa=kappa_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    delta1_par <- delta1_opt_AFGNSi_KD$par
+    
+    delta2_opt_AFGNSi_KD <- optim(delta2_par, nLL_AFGNSi_uKD_CA, mu_bar=mu_bar, x0=x0_par, delta1=delta1_par, kappa=kappa_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    delta2_par <- delta2_opt_AFGNSi_KD$par
+    
+    kappa_opt_AFGNSi_KD <- optim(kappa_par, nLL_AFGNSi_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, x0=x0_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    kappa_par <- kappa_opt_AFGNSi_KD$par
+    
+    l_sigma_opt_AFGNSi_KD <- optim(l_sigma_par, nLL_AFGNSi_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, kappa=kappa_par, x0=x0_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    l_sigma_par <- l_sigma_opt_AFGNSi_KD$par
+    
+    l_r_opt_AFGNSi_KD <- optim(l_r_par, nLL_AFGNSi_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, kappa=kappa_par, l_sigma=l_sigma_par, x0=x0_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    l_r_par <- l_r_opt_AFGNSi_KD$par
+    
+    # - Store par_est
+    CA_par[iter_count,1:length(c(x0_par, delta1_par, delta2_par, kappa_par, l_sigma_par, l_r_par))] <- c(x0_par, delta1_par, delta2_par, kappa_par, exp(l_sigma_par), exp(l_r_par))
+    CA_par[iter_count,length(c(x0_par, delta1_par, delta2_par, kappa_par, l_sigma_par, l_r_par))+1] <- - 0.5 * nLL_AFGNSi_uKD_CA(x0_par, delta1_par, delta2_par, kappa_par, l_sigma_par, l_r_par, mu_bar) - 0.5 * nrow(mu_bar) * ncol(mu_bar)
+    
+    if (abs(nLL_AFGNSi_uKD_CA(x0_par, delta1_par, delta2_par, kappa_par, l_sigma_par, l_r_par, mu_bar) - neg_loglikelihood) < tol_lik | (iter_count==max_iter) ){
+      break
+    }else{
+      # - Update log-likelihood
+      neg_loglikelihood <- nLL_AFGNSi_uKD_CA(x0_par, delta1_par, delta2_par, kappa_par, l_sigma_par, l_r_par, mu_bar)
+      iter_count <- iter_count + 1
+    }
+  }
+  
+  return(list(par_est = list(x0=CA_par[iter_count,1:5], delta1=CA_par[iter_count,6], delta2=CA_par[iter_count,7], kappa=CA_par[iter_count,8:12], sigma=CA_par[iter_count,13:17], r1=CA_par[iter_count,18], r2=CA_par[iter_count,19], rc=CA_par[iter_count,20]), log_lik = CA_par[iter_count,length(c(x0, delta1, delta2, kappa, sigma, r))+1], CA_table = CA_par[1:iter_count,]))
+}
+
+#================== - AFGNS dependent Coordinate ascent algorithm - =========================
+
+nLL_AFGNSd_uKD_CA <- function(x0, delta1, delta2, kappa, dg_l_Sigma_chol, odg_Sigma_chol, l_r, mu_bar){
+  
+  r_1 <- l_r[1]
+  r_2 <- l_r[2]
+  r_c <- l_r[3]
+  
+  n_factors <- 5  
+  n_ages <- nrow(mu_bar)   # - Number of ages
+  n_years <- ncol(mu_bar)  # - Number of years
+  
+  v_ti <- matrix(0, nrow(mu_bar), ncol(mu_bar))
+  F_ti <- matrix(1, nrow(mu_bar), ncol(mu_bar))
+  
+  ## - Factor loading matrices
+  A_tT <- matrix(0, n_ages, 1)
+  B_tT <- matrix(NA, n_ages, n_factors)
+  R <- matrix(0, n_factors, n_factors) # - Factor covariance
+  
+  # - Initialize X and Sigma
+  x_ti <- x0 #init_X
+  P_ti <- 1e-10 * diag(1, n_factors)
+  
+  Phi <- diag(exp(-kappa), n_factors) # K_p <- diag(kappa, 2) ## exp(-K_p)
+  
+  # - Build diffusion process
+  ## - Build lower cholesky factor
+  Low_chol <- low_trg_fill_0diag(odg_Sigma_chol)
+  diag(Low_chol) <- exp(dg_l_Sigma_chol)
+  
+  # - Get Sigma (covariance matrix of the diffusion process)
+  Sigma_diff <- Low_chol %*% t(Low_chol) # matrix(0, n_factors, n_factors)
+  
+  # - Get R (covariance of the state variable)
+  for(row in 1:n_factors){
+    for(col in 1:n_factors){
+      R[row,col] <- Sigma_diff[row,col] * (1 - exp(- kappa[row] - kappa[col])) / (kappa[row] + kappa[col])
+    }
+  }
+  
+  for(age in 1:n_ages){    # - scroll over the ages
+    A_tT[age,1] <- A_AFGNSg(age, Low_chol, delta1, delta2)
+    B_tT[age,] <- c(B_AFNS(age,delta1)[c(1,2)], B_AFNS(age,delta2)[2], B_AFNS(age,delta1)[3], B_AFNS(age,delta2)[3])
+  }
+  
+  for(t in 1:n_years){
+    
+    # - First observation
+    x_ti <- Phi %*% x_ti    # - x_{1,t}
+    P_ti <- Phi %*% P_ti %*% t(Phi) + R     # - P_{1,t}
+    v_ti[1,t] <- mu_bar[1,t] - A_tT[1] - B_tT[1,] %*% x_ti
+    F_ti[1,t] <- B_tT[1,] %*% P_ti %*% B_tT[1,] + exp(r_c) + exp(r_1 + exp(r_2))    
+    
+    for(i in 2:n_ages){
+      x_ti <- x_ti + P_ti %*% B_tT[i-1,] %*% (1 / F_ti[i-1,t]) %*% v_ti[i-1,t] 
+      
+      # - Joseph formula univariate
+      K_ti <- P_ti %*% B_tT[i-1,] / F_ti[i-1,t]
+      P_ti <- (diag(1, n_factors) - K_ti %*% B_tT[i-1,]) %*% P_ti %*% t(diag(1, n_factors) - K_ti %*% B_tT[i-1,]) + K_ti %*% (exp(r_c) + exp(r_1) * sum(exp(exp(r_2) * c(1:(i-1)))) / (i-1)) %*% t(K_ti) 
+      
+      # - log-likelihood values from Koopman and Durbin
+      F_ti[i,t] <- B_tT[i,] %*% P_ti %*% B_tT[i,] + exp(r_c) + exp(r_1) * sum(exp(exp(r_2) * c(1:i))) / i #exp(r_1 + r_2 * i) 
+      v_ti[i,t] <- mu_bar[i,t] - A_tT[i] - B_tT[i,] %*% x_ti
+      
+    }
+  }
+  
+  log_lik <- sum(log(F_ti) + (v_ti^2) / F_ti)
+  return(log_lik)
+}
+
+co_asc_AFGNSd <- function(mu_bar, x0=c(1.091714e-02, 1.002960e-02, 5.990785e-04, 0, 0), delta1=-8.304334e-02, delta2=-0.05, kappa=c(9.154603e-03, 1.067658e-02, 7.439715e-03, 0.003, 0.001), sigma_dg=c(3.215422e-03, 2.625474e-03, 1.164715e-03, 0.0003, 0.0001), Sigma_cov=rep(0, 10), r=exp(c(-3.335725e+01, -6.066149e-01, -1.552061e+01)), max_iter=200, tol_lik=0.1){
+  
+  # - Matrix for parameter estimates storage
+  n_factors <- 5
+  CA_par <- matrix(NA, nrow=max_iter, ncol=length(c(x0, delta1, delta2, kappa, sigma_dg, Sigma_cov, r))+1)
+  colnames(CA_par) <- c('x0_L', 'x0_S1', 'x0_S2', 'x0_C1', 'x0_C2', "delta1", 'delta2', 'kappa_L', 'kappa_S1', "kappa_S2", 'kappa_C1', 'kappa_C2', 'sigma_L', 'sigma_LS1', 'sigma_S1', 'sigma_LS2', 'sigma_S1S2', 'sigma_S2', 'sigma_LC1', 'sigma_S1C1', 'sigma_S2C1', 'sigma_C1', 'sigma_LC2', 'sigma_S1C2', 'sigma_S2C2', 'sigma_C1C2', 'sigma_C2', c("r1", "r2", "rc"), "log_lik")
+  
+  # - Initialize log-likelihood
+  neg_loglikelihood <- 0
+  
+  x0_par <- x0
+  delta1_par <- delta1
+  delta2_par <- delta2
+  kappa_par <- kappa
+  dg_l_Sigma_chol_par <- cov2par(c(sigma_dg^2, Sigma_cov))$dg_l_Sigma_chol
+  odg_Sigma_chol_par <- cov2par(c(sigma_dg^2, Sigma_cov))$odg_Sigma_chol
+  l_r_par <- log(r)
+  
+  iter_count <- 1
+  repeat{
+    
+    x0_opt_AFGNSd_KD <- optim(x0_par, nLL_AFGNSd_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    x0_par <- x0_opt_AFGNSd_KD$par
+    
+    delta1_opt_AFGNSd_KD <- optim(delta1_par, nLL_AFGNSd_uKD_CA, mu_bar=mu_bar, x0=x0_par, delta2=delta2_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "BFGS", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    delta1_par <- delta1_opt_AFGNSd_KD$par
+
+    delta2_opt_AFGNSd_KD <- optim(delta2_par, nLL_AFGNSd_uKD_CA, mu_bar=mu_bar, x0=x0_par, delta1=delta1_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "BFGS", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    delta2_par <- delta2_opt_AFGNSd_KD$par
+    
+    kappa_opt_AFGNSd_KD <- optim(kappa_par, nLL_AFGNSd_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, x0=x0_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    kappa_par <- kappa_opt_AFGNSd_KD$par
+    
+    dg_l_Sigma_chol_opt_AFGNSd_KD <- optim(dg_l_Sigma_chol_par, nLL_AFGNSd_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, kappa=kappa_par, x0=x0_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    dg_l_Sigma_chol_par <- dg_l_Sigma_chol_opt_AFGNSd_KD$par
+    
+    odg_Sigma_chol_opt_AFGNSd_KD <- optim(odg_Sigma_chol_par, nLL_AFGNSd_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, x0=x0_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    odg_Sigma_chol_par <- odg_Sigma_chol_opt_AFGNSd_KD$par
+    
+    l_r_opt_AFGNSd_KD <- optim(l_r_par, nLL_AFGNSd_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, x0=x0_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    l_r_par <- l_r_opt_AFGNSd_KD$par
+    
+    # - Store par_est
+    CA_par[iter_count,1:length(c(x0, delta1, delta2, kappa, sigma_dg, Sigma_cov, r))] <- c(x0_par, delta1_par, delta2_par, kappa_par, parest2cov(dg_l_Sigma_chol_par, odg_Sigma_chol_par), exp(l_r_par))
+    CA_par[iter_count,length(c(x0, delta1, delta2, kappa, sigma_dg, Sigma_cov, r))+1] <- - 0.5 * nLL_AFGNSd_uKD_CA(x0_par, delta1_par, delta2_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par, mu_bar) - 0.5 * nrow(mu_bar) * ncol(mu_bar)
+    
+    
+    if(abs(nLL_AFGNSd_uKD_CA(x0_par, delta1_par, delta2_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par, mu_bar) - neg_loglikelihood) < tol_lik | (iter_count==max_iter) ){
+      break
+    }else{
+      # - Update log-likelihood
+      neg_loglikelihood <- nLL_AFGNSd_uKD_CA(x0_par, delta1_par, delta2_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par, mu_bar)
+      iter_count <- iter_count + 1
+    }
+  }
+  
+  return(list(par_est = list(x0=CA_par[iter_count,c(1:5)], delta1=CA_par[iter_count,6], delta2=CA_par[iter_count,7], kappa=CA_par[iter_count,c(8:12)], Sigma=list(sigma_L = CA_par[iter_count,13], sigma_LS1 = CA_par[iter_count,14], sigma_S1 = CA_par[iter_count,15], sigma_LS2 = CA_par[iter_count,16], sigma_S1S2 = CA_par[iter_count,17], sigma_S2 = CA_par[iter_count,18], sigma_LC1 = CA_par[iter_count,19], sigma_S1C1 = CA_par[iter_count,20], sigma_S2C1 = CA_par[iter_count,21], sigma_C1 = CA_par[iter_count,22], sigma_LC2 = CA_par[iter_count,23], sigma_S1C2 = CA_par[iter_count,24], sigma_S2C2 = CA_par[iter_count,25], sigma_C1C2 = CA_par[iter_count,26], sigma_C2 = CA_par[iter_count,27]), r1=CA_par[iter_count,28], r2=CA_par[iter_count,29], rc=CA_par[iter_count,30]), neg_log_lik = CA_par[iter_count,length(c(x0, delta1, delta2, kappa, sigma_dg, Sigma_cov, r))+1], CA_table = CA_par[1:iter_count,]))
+}
+
 
 #======================= - CIR Coordinate ascent algorithm with bounded X - =====================
 
@@ -676,6 +923,12 @@ co_asc_CIR <- function(mu_bar, x0=c(1.611524e-03, 5.763081e-03, 1.208483e-02), d
   
   return(list(par_est = list(x0=CA_par[iter_count,1:n_factors], delta=CA_par[iter_count,((n_factors + 1):(n_factors*2))], kappa=CA_par[iter_count,((n_factors*2 + 1):(n_factors*3))], sigma=CA_par[iter_count,((n_factors*3 + 1):(n_factors*4))], theta_Q=CA_par[iter_count,((n_factors*4 + 1):(n_factors*5))], theta_P=CA_par[iter_count,((n_factors*5 + 1):(n_factors*6))], r1=CA_par[iter_count,(n_factors*6 + 1)], r2=CA_par[iter_count,(n_factors*6 + 2)], rc=CA_par[iter_count,(n_factors*6 + 3)]), neg_log_lik = CA_par[iter_count,length(c(x0, delta, kappa, sigma, theta_Q, theta_P, r))+1], CA_table = CA_par[1:iter_count,]))
 }
+
+
+
+
+
+
 
 
 
