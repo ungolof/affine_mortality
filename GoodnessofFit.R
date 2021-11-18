@@ -8,7 +8,9 @@ source('FilterSmoother.R')
 ## - Independent
 mu_bar_hat_BSi <- function(x0, delta, kappa, sigma, r, mu_bar){
   n_factors <- length(kappa)
-
+  n_ages <- nrow(mu_bar)   # - Number of ages
+  n_years <- ncol(mu_bar)  # - Number of years
+  
   KF_outcome <- KF_BSi_uKD(x0, delta, kappa, sigma, r, mu_bar)
   X_t <- KF_outcome$X_t
   
@@ -34,7 +36,9 @@ mu_bar_hat_BSi <- function(x0, delta, kappa, sigma, r, mu_bar){
 ## - Dependent
 mu_bar_hat_BSd_2F <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar){
   n_factors <- 2
-
+  n_ages <- nrow(mu_bar)   # - Number of ages
+  n_years <- ncol(mu_bar)  # - Number of years
+  
   delta_matrix <- low_trg_fill(delta) # - create lower diagonal matrix
   
   KF_outcome <- KF_BSd_2F_uKD(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar)
@@ -68,7 +72,9 @@ mu_bar_hat_BSd_2F <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar){
 
 mu_bar_hat_BSd_3F <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar){
   n_factors <- 3
-
+  n_ages <- nrow(mu_bar)   # - Number of ages
+  n_years <- ncol(mu_bar)  # - Number of years
+  
   delta_matrix <- low_trg_fill(delta) # - create lower diagonal matrix
   
   KF_outcome <- KF_BSd_3F_uKD(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar)
@@ -104,6 +110,8 @@ mu_bar_hat_BSd_3F <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar){
 ## - Independent
 mu_bar_hat_AFNSi <- function(x0, delta, kappa, sigma, r, mu_bar){
   n_factors <- 3
+  n_ages <- nrow(mu_bar)   # - Number of ages
+  n_years <- ncol(mu_bar)  # - Number of years
   
   KF_outcome <- KF_AFNSi_uKD(x0, delta, kappa, sigma, r, mu_bar)
   X_t <- KF_outcome$X_t
@@ -130,7 +138,9 @@ mu_bar_hat_AFNSi <- function(x0, delta, kappa, sigma, r, mu_bar){
 ## - Dependent
 mu_bar_hat_AFNSd <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar){
   n_factors <- 3
-
+  n_ages <- nrow(mu_bar)   # - Number of ages
+  n_years <- ncol(mu_bar)  # - Number of years
+  
   KF_outcome <- KF_AFNSd_uKD(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar)
   X_t <- KF_outcome$X_t
   
@@ -160,10 +170,77 @@ mu_bar_hat_AFNSd <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar){
   return(mu_bar_hat)
 }
 
+# - AFNS
+## - Independent
+mu_bar_hat_AFGNSi <- function(x0, delta1, delta2, kappa, sigma, r, mu_bar){
+  n_factors <- 5
+  n_ages <- nrow(mu_bar)   # - Number of ages
+  n_years <- ncol(mu_bar)  # - Number of years
+  
+  KF_outcome <- KF_AFGNSi_uKD(x0, delta1, delta2, kappa, sigma, r, mu_bar)
+  X_t <- KF_outcome$X_t
+  
+  mu_bar_hat <- matrix(NA, n_ages, n_years)
+  rownames(mu_bar_hat) <- AgeRange
+  colnames(mu_bar_hat) <- CohortRange
+  
+  ## - Factor loading matrices
+  A_tT <- matrix(0, n_ages, 1)
+  B_tT <- matrix(NA, n_ages, n_factors)
+  
+  for(age in 1:n_ages){    # - scroll over the ages
+    A_tT[age,1] <- A_AFGNSi(age, sigma, delta1, delta2)  
+    B_tT[age,] <- c(B_AFNS(age,delta1)[c(1,2)], B_AFNS(age,delta2)[2], B_AFNS(age,delta1)[3], B_AFNS(age,delta2)[3])
+  }
+  
+  for(t in 1:n_years){
+    mu_bar_hat[,t] <- A_tT + B_tT %*% X_t[,t+1]
+  }
+  return(mu_bar_hat)
+}
+
+## - Dependent
+mu_bar_hat_AFGNSd <- function(x0, delta1, delta2, kappa, sigma_dg, Sigma_cov, r, mu_bar){
+  n_factors <- 5
+  n_ages <- nrow(mu_bar)   # - Number of ages
+  n_years <- ncol(mu_bar)  # - Number of years
+  
+  KF_outcome <- KF_AFGNSd_uKD(x0, delta1, delta2, kappa, sigma_dg, Sigma_cov, r, mu_bar)
+  X_t <- KF_outcome$X_t
+  
+  mu_bar_hat <- matrix(NA, n_ages, n_years)
+  rownames(mu_bar_hat) <- AgeRange
+  colnames(mu_bar_hat) <- CohortRange
+  
+  ## - Factor loading matrices
+  A_tT <- matrix(0, n_ages, 1)
+  B_tT <- matrix(NA, n_ages, n_factors)
+  
+  # - Build diffusion process
+  ## - Build lower cholesky factor
+  dg_l_Sigma_chol <- cov2par(c(sigma_dg^2, Sigma_cov))$dg_l_Sigma_chol
+  odg_Sigma_chol <- cov2par(c(sigma_dg^2, Sigma_cov))$odg_Sigma_chol
+  Low_chol <- low_trg_fill_0diag(odg_Sigma_chol)
+  diag(Low_chol) <- exp(dg_l_Sigma_chol)
+  
+  for(age in 1:n_ages){    # - scroll over the ages
+    A_tT[age,1] <- A_AFGNSg(age, Low_chol, delta1, delta2)####### A_ind(age, exp(l_sigma), delta)  
+    B_tT[age,] <- c(B_AFNS(age,delta1)[c(1,2)], B_AFNS(age,delta2)[2], B_AFNS(age,delta1)[3], B_AFNS(age,delta2)[3])
+  }
+  
+  for(t in 1:n_years){
+    mu_bar_hat[,t] <- A_tT + B_tT %*% X_t[,t+1]
+  }
+  return(mu_bar_hat)
+}
+
+
 ## - CIR in the basic version (since the two log-likelihoods yield very different results)
 mu_bar_hat_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar){
   n_factors <- length(kappa)
-
+  n_ages <- nrow(mu_bar)   # - Number of ages
+  n_years <- ncol(mu_bar)  # - Number of years
+  
   KF_outcome <- KF_CIR_uKD(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar)
   X_t <- KF_outcome$X_t
   
@@ -350,7 +427,7 @@ residuals_std_AFNSi <- function(observed, x0, delta, kappa, sigma, r){
   return(residuals)
 }
 
-residuals_std_AFNSd <- function(observed, delta, kappa, sigma_dg, Sigma_cov, r){
+residuals_std_AFNSd <- function(observed, x0, delta, kappa, sigma_dg, Sigma_cov, r){
   n_factors <- 3
   n_ages <- nrow(observed)
   B_tT <- matrix(NA, n_ages, n_factors)
@@ -386,6 +463,82 @@ residuals_std_AFNSd <- function(observed, delta, kappa, sigma_dg, Sigma_cov, r){
   H <- meas_err_BS(l_r1, l_r2, l_rc)
   Var_y <- H + B_tT %*% R_matrix %*% t(B_tT)
 
+  premultiplier <- solve(sqrtm(Var_y))
+  
+  for(t in 1:n_years){
+    residuals[,t] <- premultiplier %*% residuals[,t]
+  }
+  
+  colnames(residuals) <- colnames(observed)
+  rownames(residuals) <- rownames(observed)
+  return(residuals)
+}
+
+residuals_std_AFGNSi <- function(observed, x0, delta1, delta2, kappa, sigma, r){
+  n_factors <- 5
+  n_ages <- nrow(observed)
+  B_tT <- matrix(NA, n_ages, n_factors)
+  
+  l_r1 <- log(r[1])
+  l_r2 <- log(r[2])
+  l_rc <- log(r[3])
+  
+  for(age in 1:n_ages){    # - scroll over the ages
+    B_tT[age,] <- c(B_AFNS(age,delta1)[c(1,2)], B_AFNS(age,delta2)[2], B_AFNS(age,delta1)[3], B_AFNS(age,delta2)[3])
+  }
+  
+  residuals <- observed - mu_bar_hat_AFNSi(x0, delta1, delta2, kappa, sigma, r)
+  H <- meas_err_BS(l_r1, l_r2, l_rc)
+  
+  Var_y <- H + B_tT %*% diag(((sigma^2) / (2 * kappa)) * (1 - exp(-2 * kappa)), n_factors) %*% t(B_tT)
+  
+  premultiplier <- solve(sqrtm(Var_y))
+  
+  for(t in 1:n_years){
+    residuals[,t] <- premultiplier %*% residuals[,t]
+  }
+  
+  colnames(residuals) <- colnames(observed)
+  rownames(residuals) <- rownames(observed)
+  return(residuals)
+}
+
+residuals_std_AFGNSd <- function(observed, x0, delta1, delta2, kappa, sigma_dg, Sigma_cov, r){
+  n_factors <- 5
+  n_ages <- nrow(observed)
+  B_tT <- matrix(NA, n_ages, n_factors)
+  
+  l_r1 <- log(r[1])
+  l_r2 <- log(r[2])
+  l_rc <- log(r[3])
+  
+  # - Build diffusion process
+  ## - Build lower cholesky factor
+  dg_l_Sigma_chol <- cov2par(c(sigma_dg^2, Sigma_cov))$dg_l_Sigma_chol
+  odg_Sigma_chol <- cov2par(c(sigma_dg^2, Sigma_cov))$odg_Sigma_chol
+  Low_chol <- low_trg_fill_0diag(odg_Sigma_chol)
+  diag(Low_chol) <- exp(dg_l_Sigma_chol)
+  delta_matrix <- low_trg_fill(delta) # - create lower diagonal matrix
+  
+  R_matrix <- matrix(0, n_factors, n_factors)
+  # - Get Sigma (covariance matrix of the diffusion process)
+  Sigma_diff <- Low_chol %*% t(Low_chol) # matrix(0, n_factors, n_factors)
+  
+  # - Get R (covariance of the state variable)
+  for(row in 1:n_factors){
+    for(col in 1:n_factors){
+      R_matrix[row,col] <- Sigma_diff[row,col] * (1 - exp(- kappa[row] - kappa[col])) / (kappa[row] + kappa[col])
+    }
+  }
+  
+  for(age in 1:n_ages){    # - scroll over the ages
+    B_tT[age,] <- c(B_AFNS(age,delta1)[c(1,2)], B_AFNS(age,delta2)[2], B_AFNS(age,delta1)[3], B_AFNS(age,delta2)[3])
+  }
+  
+  residuals <- observed - mu_bar_hat_AFNSd(x0, delta1, delta2, kappa, sigma_dg, Sigma_cov, r, observed)
+  H <- meas_err_BS(l_r1, l_r2, l_rc)
+  Var_y <- H + B_tT %*% R_matrix %*% t(B_tT)
+  
   premultiplier <- solve(sqrtm(Var_y))
   
   for(t in 1:n_years){
@@ -458,6 +611,11 @@ avg2rates <- function(mu_bar){
   }
   return(mu)
 }
+
+
+
+
+
 
 
 
