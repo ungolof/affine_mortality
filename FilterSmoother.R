@@ -47,11 +47,7 @@ KF_BSi_uKD <- function(x0, delta, kappa, sigma, r, mu_bar){
   x_ti <- x0 #init_X
   P_ti <- 1e-10 * diag(1, n_factors)
   
-  H <- matrix(0, n_ages, n_ages) # - Age covariance
   R <- matrix(0, n_factors, n_factors) # - Factor covariance
-  
-  # - Setting H (covariance of measurement error - indep. among ages)
-  H <- meas_err_BS(r_1, r_2, r_c)
   
   for(age in 1:n_ages){    # - scroll over the ages
     A_tT[age,1] <- A_BSi(age, sigma, delta)  
@@ -134,11 +130,7 @@ KF_BSd_2F_uKD <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar){
   S_t_c[,(1:n_factors)] <- diag(1, n_factors) * 1e-10
   S_t[,(1:n_factors)] <- diag(1, n_factors) * 1e-10
   
-  H <- matrix(0, n_ages, n_ages) # - Age covariance
   R <- matrix(0, n_factors, n_factors) # - Factor covariance
-  
-  # - Setting H (covariance of measurement error - indep. among ages)
-  H <- meas_err_BS(r_1, r_2, r_c)
   
   Phi <- diag(exp(-kappa), n_factors) # K_p <- diag(kappa, 2) ## exp(-K_p)
   
@@ -236,11 +228,7 @@ KF_BSd_3F_uKD <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar){
   S_t_c[,(1:n_factors)] <- diag(1, n_factors) * 1e-10
   S_t[,(1:n_factors)] <- diag(1, n_factors) * 1e-10
   
-  H <- matrix(0, n_ages, n_ages) # - Age covariance
   R <- matrix(0, n_factors, n_factors) # - Factor covariance
-  
-  # - Setting H (covariance of measurement error - indep. among ages)
-  H <- meas_err_BS(r_1, r_2, r_c)
   
   Phi <- diag(exp(-kappa), n_factors) # K_p <- diag(kappa, 2) ## exp(-K_p)
   
@@ -337,11 +325,7 @@ KF_AFNSi_uKD <- function(x0, delta, kappa, sigma, r, mu_bar){
   x_ti <- x0 #init_X
   P_ti <- 1e-10 * diag(1, n_factors)
   
-  H <- matrix(0, n_ages, n_ages) # - Age covariance
   R <- matrix(0, n_factors, n_factors) # - Factor covariance
-  
-  # - Setting H (covariance of measurement error - indep. among ages)
-  H <- meas_err_BS(r_1, r_2, r_c)
   
   for(age in 1:n_ages){    # - scroll over the ages
     A_tT[age,1] <- A_AFNSi(age, sigma, delta)  
@@ -420,11 +404,7 @@ KF_AFNSd_uKD <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar){
   S_t_c[,(1:n_factors)] <- diag(1, n_factors) * 1e-10
   S_t[,(1:n_factors)] <- diag(1, n_factors) * 1e-10
   
-  H <- matrix(0, n_ages, n_ages) # - Age covariance
   R <- matrix(0, n_factors, n_factors) # - Factor covariance
-  
-  # - Setting H (covariance of measurement error - indep. among ages)
-  H <- meas_err_BS(r_1, r_2, r_c)
   
   Phi <- diag(exp(-kappa), n_factors) # K_p <- diag(kappa, 2) ## exp(-K_p)
   
@@ -448,6 +428,181 @@ KF_AFNSd_uKD <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar){
   for(age in 1:n_ages){    # - scroll over the ages
     A_tT[age,1] <- A_AFNSg(age, Low_chol, delta)####### A_ind(age, exp(l_sigma), delta)  
     B_tT[age,] <- B_AFNS(age, delta)  ###### B_ind(age,delta)  
+  }
+  
+  for(t in 1:n_years){
+    
+    # - First observation
+    x_ti <- Phi %*% x_ti    # - x_{1,t}
+    P_ti <- Phi %*% P_ti %*% t(Phi) + R     # - P_{1,t}
+    v_ti[1,t] <- mu_bar[1,t] - A_tT[1] - B_tT[1,] %*% x_ti
+    F_ti[1,t] <- B_tT[1,] %*% P_ti %*% B_tT[1,] + exp(r_c) + exp(r_1 + exp(r_2))    #max(0.000001, r_c + r_1 * exp(r_2))#exp(r_1 + r_2)  In case of the error specification of Xu et al. (2019)
+    #    F_ti[1,t] <- B_tT[1,] %*% P_ti %*% B_tT[1,] + max(1e-8, r_c + exp(r_1) * exp(exp(r_2))) #max(0.000001, r_c + r_1 * exp(r_2))#exp(r_1 + r_2)  In case of the error specification of Xu et al. (2019)
+    
+    X_t_c[,t+1] <- x_ti
+    S_t_c[,(t * n_factors + 1):((t+1) * n_factors)] <- P_ti
+    
+    for(i in 2:n_ages){
+      x_ti <- x_ti + P_ti %*% B_tT[i-1,] %*% (1 / F_ti[i-1,t]) %*% v_ti[i-1,t] # * (v_ti[i-1,t] / F_ti[i-1,t])   ### - Same change from + to minus following Xu, Sherris and Ziveyi 2019SAJ               # - a_{t,i+1}
+      
+      # - Joseph formula univariate
+      K_ti <- P_ti %*% B_tT[i-1,] / F_ti[i-1,t]
+      P_ti <- (diag(1, n_factors) - K_ti %*% B_tT[i-1,]) %*% P_ti %*% t(diag(1, n_factors) - K_ti %*% B_tT[i-1,]) + K_ti %*% (exp(r_c) + exp(r_1) * sum(exp(exp(r_2) * c(1:(i-1)))) / (i-1)) %*% t(K_ti) #exp(r_1 + r_2 * (i-1)) %*% t(K_ti) ####(max(0.001, r_c + r_1 * sum(exp(r_2 * c(1:(i-1)))) / (i-1))) %*% t(K_ti)
+      
+      # - log-likelihood values from Koopman and Durbin
+      F_ti[i,t] <- B_tT[i,] %*% P_ti %*% B_tT[i,] + exp(r_c) + exp(r_1) * sum(exp(exp(r_2) * c(1:i))) / i 
+      v_ti[i,t] <- mu_bar[i,t] - A_tT[i] - B_tT[i,] %*% x_ti
+      
+    }
+    
+    X_t[,t+1] <- x_ti
+    S_t[,(t * n_factors + 1):((t+1) * n_factors)] <- P_ti
+  }
+  
+  return(list(X_t=X_t, X_t_c=X_t_c, S_t=S_t, S_t_c=S_t_c))
+}
+
+### - Independent AFNS
+KF_AFGNSi_uKD <- function(x0, delta1, delta2, kappa, sigma, r, mu_bar){
+  
+  r_1 <- log(r[1])
+  r_2 <- log(r[2])
+  r_c <- log(r[3])
+  
+  n_factors <- length(kappa)
+  
+  n_ages <- nrow(mu_bar)   # - Number of ages
+  n_years <- ncol(mu_bar)  # - Number of years
+  
+  # - Def. variables
+  ## - State variables
+  X_t <- matrix(NA, n_factors, (n_years+1)) # - state (including state at t=0)
+  X_t_c <- matrix(NA, n_factors, (n_years+1)) # - conditional state (including state at t=0; conditional to t-1)
+  
+  S_t <- matrix(NA, n_factors, n_factors * (n_years + 1)) # - covariance matrix of factors
+  S_t_c <- matrix(NA, n_factors, n_factors * (n_years + 1)) # - cond'l covariance matrix of factors
+  
+  v_ti <- mu_bar
+  F_ti <- mu_bar
+  
+  ## - Factor loading matrices
+  A_tT <- matrix(0, n_ages, 1)
+  B_tT <- matrix(NA, n_ages, n_factors)
+  
+  # - Initial values of states and of covariance
+  X_t_c[,1] <- x0
+  X_t[,1] <- x0
+  
+  S_t_c[,(1:n_factors)] <-1e-10 * diag(1, n_factors)
+  S_t[,(1:n_factors)] <- 1e-10 * diag(1, n_factors)
+  
+  # - Initialize X and Sigma
+  x_ti <- x0 #init_X
+  P_ti <- 1e-10 * diag(1, n_factors)
+  
+  R <- matrix(0, n_factors, n_factors) # - Factor covariance
+  
+  for(age in 1:n_ages){    # - scroll over the ages
+    A_tT[age,1] <- A_AFGNSi(age, sigma, delta1, delta2)  
+    B_tT[age,] <- c(B_AFNS(age,delta1)[c(1,2)], B_AFNS(age,delta2)[2], B_AFNS(age,delta1)[3], B_AFNS(age,delta2)[3])
+  }
+  
+  Phi <- diag(exp(-kappa), n_factors) # K_p <- diag(kappa, 2) ## exp(-K_p)
+  R <- diag(((sigma^2) / (2 * kappa)) * (1 - exp(-2 * kappa)), n_factors)
+  
+  for(t in 1:n_years){
+    
+    # - First observation
+    x_ti <- Phi %*% x_ti    # - x_{1,t}
+    P_ti <- Phi %*% P_ti %*% t(Phi) + R     # - P_{1,t}
+    v_ti[1,t] <- mu_bar[1,t] - A_tT[1] - B_tT[1,] %*% x_ti
+    F_ti[1,t] <- B_tT[1,] %*% P_ti %*% B_tT[1,] + exp(r_c) + exp(r_1 + exp(r_2))    
+    
+    X_t_c[,t+1] <- x_ti
+    S_t_c[,(t * n_factors + 1):((t+1) * n_factors)] <- P_ti
+    
+    for(i in 2:n_ages){
+      x_ti <- x_ti + P_ti %*% B_tT[i-1,] %*% (1 / F_ti[i-1,t]) %*% v_ti[i-1,t] # * (v_ti[i-1,t] / F_ti[i-1,t])   ### - Same change from + to minus following Xu, Sherris and Ziveyi 2019SAJ               # - a_{t,i+1}
+      
+      # - Joseph formula univariate
+      K_ti <- P_ti %*% B_tT[i-1,] / F_ti[i-1,t]
+      P_ti <- (diag(1, n_factors) - K_ti %*% B_tT[i-1,]) %*% P_ti %*% t(diag(1, n_factors) - K_ti %*% B_tT[i-1,]) + K_ti %*% (exp(r_c) + exp(r_1) * sum(exp(exp(r_2) * c(1:(i-1)))) / (i-1)) %*% t(K_ti) #exp(r_1 + r_2 * (i-1)) %*% t(K_ti) ####(max(0.001, r_c + r_1 * sum(exp(r_2 * c(1:(i-1)))) / (i-1))) %*% t(K_ti)
+      
+      # - log-likelihood values from Koopman and Durbin
+      F_ti[i,t] <- B_tT[i,] %*% P_ti %*% B_tT[i,] + exp(r_c) + exp(r_1) * sum(exp(exp(r_2) * c(1:i))) / i #exp(r_1 + r_2 * i) 
+      v_ti[i,t] <- mu_bar[i,t] - A_tT[i] - B_tT[i,] %*% x_ti
+      
+    }
+    
+    X_t[,t+1] <- x_ti
+    S_t[,(t * n_factors + 1):((t+1) * n_factors)] <- P_ti
+    
+  }
+  return(list(X_t=X_t, X_t_c=X_t_c, S_t=S_t, S_t_c=S_t_c))
+}
+
+### - Dependent AFNS
+KF_AFGNSd_uKD <- function(x0, delta1, delta2, kappa, sigma_dg, Sigma_cov, r, mu_bar){
+  
+  r_1 <- log(r[1])
+  r_2 <- log(r[2])
+  r_c <- log(r[3])
+  
+  n_factors <- 5  
+  
+  n_ages <- nrow(mu_bar)   # - Number of ages
+  n_years <- ncol(mu_bar)  # - Number of years
+  
+  v_ti <- mu_bar
+  F_ti <- mu_bar
+  
+  # - Def. variables
+  ## - State variables
+  X_t <- matrix(NA, n_factors, (n_years+1)) # - state (including state at t=0)
+  X_t_c <- matrix(NA, n_factors, (n_years+1)) # - conditional state (including state at t=0; conditional to t-1)
+  
+  S_t <- matrix(NA, n_factors, n_factors * (n_years + 1)) # - covariance matrix of factors
+  S_t_c <- matrix(NA, n_factors, n_factors * (n_years + 1)) # - cond'l covariance matrix of factors
+  
+  ## - Factor loading matrices
+  A_tT <- matrix(0, n_ages, 1)
+  B_tT <- matrix(NA, n_ages, n_factors)
+  
+  # - Initial values of states and of covariance
+  X_t_c[,1] <- x0
+  X_t[,1] <- x0
+  
+  # - Initialize X and Sigma
+  x_ti <- x0 #init_X
+  P_ti <- diag(1, n_factors) * 1e-10
+  
+  S_t_c[,(1:n_factors)] <- diag(1, n_factors) * 1e-10
+  S_t[,(1:n_factors)] <- diag(1, n_factors) * 1e-10
+  
+  R <- matrix(0, n_factors, n_factors) # - Factor covariance
+
+  Phi <- diag(exp(-kappa), n_factors) # K_p <- diag(kappa, 2) ## exp(-K_p)
+  
+  # - Build diffusion process
+  ## - Build lower cholesky factor
+  dg_l_Sigma_chol <- cov2par(c(sigma_dg^2, Sigma_cov))$dg_l_Sigma_chol
+  odg_Sigma_chol <- cov2par(c(sigma_dg^2, Sigma_cov))$odg_Sigma_chol
+  Low_chol <- low_trg_fill_0diag(odg_Sigma_chol)
+  diag(Low_chol) <- exp(dg_l_Sigma_chol)
+  
+  # - Get Sigma (covariance matrix of the diffusion process)
+  Sigma_diff <- Low_chol %*% t(Low_chol) # matrix(0, n_factors, n_factors)
+  
+  # - Get R (covariance of the state variable)
+  for(row in 1:n_factors){
+    for(col in 1:n_factors){
+      R[row,col] <- Sigma_diff[row,col] * (1 - exp(- kappa[row] - kappa[col])) / (kappa[row] + kappa[col])
+    }
+  }
+  
+  for(age in 1:n_ages){    # - scroll over the ages
+    A_tT[age,1] <- A_AFGNSg(age, Low_chol, delta1, delta2)####### A_ind(age, exp(l_sigma), delta)  
+    B_tT[age,] <- c(B_AFNS(age,delta1)[c(1,2)], B_AFNS(age,delta2)[2], B_AFNS(age,delta1)[3], B_AFNS(age,delta2)[3])
   }
   
   for(t in 1:n_years){
@@ -515,11 +670,7 @@ KF_CIR_uKD <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar){
   S_t_c[,(1:n_factors)] <- 1e-10 * diag(1, n_factors)
   S_t[,(1:n_factors)] <- 1e-10 * diag(1, n_factors)
   
-  H <- matrix(0, n_ages, n_ages) # - Age covariance
   R <- matrix(0, n_factors, n_factors * (n_years + 1)) # - Factor covariance
-  
-  # - Setting H (covariance of measurement error - indep. among ages)
-  H <- meas_err_BS(r_1, r_2, r_c)
   
   x_ti <- x0
   P_ti <- 1e-10 * diag(1, n_factors)
@@ -590,9 +741,6 @@ RTS_sm_bas <- function(X_t, X_t_c, S_t, S_t_c, kappa){
   }
   return(list(X_t_sm=X_t_sm, S_t_sm=S_t_sm, G_t=G_t))
 }
-
-
-
 
 
 
