@@ -119,10 +119,9 @@ A_AFNSi <- function(T, sigma, delta){
   return(- value)
 }
 
-## - General AFNS
+## - AFNS for dependent (and independent) factor models
 ### -  A(t,T) function for dependent model (already divided by T-t), general version applicable also to independent models
 # - from Christensen et. al. 2011
-
 A_AFNSg <- function(T, sigma_mat, delta){
   
   A_bar <- (sigma_mat[1,1] ^ 2) + (sigma_mat[1,2] ^ 2) + (sigma_mat[1,3] ^ 2)
@@ -140,6 +139,55 @@ A_AFNSg <- function(T, sigma_mat, delta){
   
   return(- value)
 }
+
+# - AFGNS
+## - Independent factors
+A_AFGNSi <- function(T, sigma, delta1, delta2){
+  value <- (sigma[1]^2) * (T^2) / 6 + (sigma[2]^2) * (0.5 / (delta1^2) - (1 - exp(-delta1 * T))/(T * (delta1^3)) + 0.25 * (1 - exp(-delta1 * 2 * T))/(T * (delta1^3)) ) + 
+                                      (sigma[3]^2) * (0.5 / (delta2^2) - (1 - exp(-delta2 * T))/(T * (delta2^3)) + 0.25 * (1 - exp(-delta2 * 2 * T))/(T * (delta2^3)) ) + 
+           (sigma[4]^2) * (0.5 / (delta1^2) + exp(- delta1 * T)/(delta1^2) - 0.25 * T * exp(- 2 * T * delta1) / delta1 - 0.75 * exp(- 2 * T * delta1) / (delta1^2) - 2 * (1 - exp( - delta1 * T)) / (T * (delta1^3)) + 0.625 * (1 - exp( - 2 * delta1 * T)) / (T * (delta1^3)) ) + 
+           (sigma[5]^2) * (0.5 / (delta2^2) + exp(- delta2 * T)/(delta2^2) - 0.25 * T * exp(- 2 * T * delta2) / delta2 - 0.75 * exp(- 2 * T * delta2) / (delta2^2) - 2 * (1 - exp( - delta2 * T)) / (T * (delta2^3)) + 0.625 * (1 - exp( - 2 * delta2 * T)) / (T * (delta2^3)) )
+  return(- value)
+}
+
+A_AFGNSg <- function(T, sigma_mat, delta1, delta2){
+  A_bar <- (sigma_mat[1,1] ^ 2) + (sigma_mat[1,2] ^ 2) + (sigma_mat[1,3] ^ 2) + (sigma_mat[1,4] ^ 2) + (sigma_mat[1,5] ^ 2)
+  B_bar <- (sigma_mat[2,1] ^ 2) + (sigma_mat[2,2] ^ 2) + (sigma_mat[2,3] ^ 2) + (sigma_mat[2,4] ^ 2) + (sigma_mat[2,5] ^ 2)
+  C_bar <- (sigma_mat[3,1] ^ 2) + (sigma_mat[3,2] ^ 2) + (sigma_mat[3,3] ^ 2) + (sigma_mat[3,4] ^ 2) + (sigma_mat[3,5] ^ 2)
+  D_bar <- (sigma_mat[4,1] ^ 2) + (sigma_mat[4,2] ^ 2) + (sigma_mat[4,3] ^ 2) + (sigma_mat[4,4] ^ 2) + (sigma_mat[4,5] ^ 2)
+  E_bar <- (sigma_mat[5,1] ^ 2) + (sigma_mat[5,2] ^ 2) + (sigma_mat[5,3] ^ 2) + (sigma_mat[5,4] ^ 2) + (sigma_mat[5,5] ^ 2)
+  
+  F_bar <- sigma_mat[1,1] * sigma_mat[2,1] + sigma_mat[1,2] * sigma_mat[2,2] + sigma_mat[1,3] * sigma_mat[2,3] + sigma_mat[1,4] * sigma_mat[2,4] + sigma_mat[1,5] * sigma_mat[2,5]
+  G_bar <- sigma_mat[1,1] * sigma_mat[3,1] + sigma_mat[1,2] * sigma_mat[3,2] + sigma_mat[1,3] * sigma_mat[3,3] + sigma_mat[1,4] * sigma_mat[3,4] + sigma_mat[1,5] * sigma_mat[3,5]
+  H_bar <- sigma_mat[1,1] * sigma_mat[4,1] + sigma_mat[1,2] * sigma_mat[4,2] + sigma_mat[1,3] * sigma_mat[4,3] + sigma_mat[1,4] * sigma_mat[4,4] + sigma_mat[1,5] * sigma_mat[4,5]
+  I_bar <- sigma_mat[1,1] * sigma_mat[5,1] + sigma_mat[1,2] * sigma_mat[5,2] + sigma_mat[1,3] * sigma_mat[5,3] + sigma_mat[1,4] * sigma_mat[5,4] + sigma_mat[1,5] * sigma_mat[5,5]
+  J_bar <- sigma_mat[2,1] * sigma_mat[3,1] + sigma_mat[2,2] * sigma_mat[3,2] + sigma_mat[2,3] * sigma_mat[3,3] + sigma_mat[2,4] * sigma_mat[3,4] + sigma_mat[2,5] * sigma_mat[3,5]
+  K_bar <- sigma_mat[2,1] * sigma_mat[4,1] + sigma_mat[2,2] * sigma_mat[4,2] + sigma_mat[2,3] * sigma_mat[4,3] + sigma_mat[2,4] * sigma_mat[4,4] + sigma_mat[2,5] * sigma_mat[4,5]
+  L_bar <- sigma_mat[2,1] * sigma_mat[5,1] + sigma_mat[2,2] * sigma_mat[5,2] + sigma_mat[2,3] * sigma_mat[5,3] + sigma_mat[2,4] * sigma_mat[5,4] + sigma_mat[2,5] * sigma_mat[5,5]
+  M_bar <- sigma_mat[3,1] * sigma_mat[4,1] + sigma_mat[3,2] * sigma_mat[4,2] + sigma_mat[3,3] * sigma_mat[4,3] + sigma_mat[3,4] * sigma_mat[4,4] + sigma_mat[3,5] * sigma_mat[4,5]
+  N_bar <- sigma_mat[3,1] * sigma_mat[5,1] + sigma_mat[3,2] * sigma_mat[5,2] + sigma_mat[3,3] * sigma_mat[5,3] + sigma_mat[3,4] * sigma_mat[5,4] + sigma_mat[3,5] * sigma_mat[5,5]
+  O_bar <- sigma_mat[4,1] * sigma_mat[5,1] + sigma_mat[4,2] * sigma_mat[5,2] + sigma_mat[4,3] * sigma_mat[5,3] + sigma_mat[4,4] * sigma_mat[5,4] + sigma_mat[4,5] * sigma_mat[5,5]
+  
+  value <- A_bar * (T^2) / 6 + B_bar * (0.5 / (delta1^2) - (1 - exp(- delta1 * T))/(T * (delta1^3)) + 0.25 * (1 - exp(-delta1 * 2 * T))/(T * (delta1^3)) ) + 
+                               C_bar * (0.5 / (delta2^2) - (1 - exp(- delta2 * T))/(T * (delta2^3)) + 0.25 * (1 - exp(-delta2 * 2 * T))/(T * (delta2^3)) ) + 
+           D_bar * (0.5 / (delta1^2) + exp(- delta1 * T)/(delta1^2) - 0.25 * T * exp(- 2 * T * delta1) / delta1 - 0.75 * exp(- 2 * T * delta1) / (delta1^2) - 2 * (1 - exp( - delta1 * T)) / (T * (delta1^3)) + 0.625 * (1 - exp( - 2 * delta1 * T)) / (T * (delta1^3)) ) + 
+           E_bar * (0.5 / (delta2^2) + exp(- delta2 * T)/(delta2^2) - 0.25 * T * exp(- 2 * T * delta2) / delta2 - 0.75 * exp(- 2 * T * delta2) / (delta2^2) - 2 * (1 - exp( - delta2 * T)) / (T * (delta2^3)) + 0.625 * (1 - exp( - 2 * delta2 * T)) / (T * (delta2^3)) ) +
+           F_bar * (0.5 * T / delta1 + exp(- delta1 * T) / (delta1 ^ 2) - (1 - exp(- T * delta1)) / (T * (delta1 ^ 3)) ) + 
+           G_bar * (0.5 * T / delta2 + exp(- delta2 * T) / (delta2 ^ 2) - (1 - exp(- T * delta2)) / (T * (delta2 ^ 3)) ) + 
+           H_bar * (3 * exp(- T * delta1) / (delta1 ^ 2) + 0.5 * T / delta1 + T * exp(- T * delta1) / delta1 - 3 * (1 - exp(- T * delta1)) / (T * (delta1 ^ 3)) ) + 
+           I_bar * (3 * exp(- T * delta2) / (delta2 ^ 2) + 0.5 * T / delta2 + T * exp(- T * delta2) / delta2 - 3 * (1 - exp(- T * delta2)) / (T * (delta2 ^ 3)) ) + 
+           J_bar * (1 / (delta1 * delta2) - (1 - exp(- T * delta1)) / (T * (delta1 ^ 2) * delta2) - (1 - exp(- T * delta2)) / (T * (delta2 ^ 2) * delta1) + (1 - exp(- T * (delta1 + delta2))) / (T * delta1 * delta2 * (delta1 + delta2) ) ) + 
+           K_bar * (1 / (delta1 ^ 2) + exp(- delta1 * T) / (delta1 ^ 2) - 0.5 * exp(- 2 * delta1 * T) / (delta1 ^ 2) - 3 * (1 - exp(- T * delta1)) / (T * (delta1 ^ 3)) + 0.75 * (1 - exp(- 2 * T * delta1)) / (T * (delta1 ^ 3)) ) + 
+           L_bar * (1 / (delta1 * delta2) + exp(- T * delta2) / (delta1 * delta2) - exp(- T * (delta1 + delta2)) / (delta1 * (delta1 + delta2)) - (1 - exp(- T * delta1)) / (T * (delta1 ^ 2) * delta2) - 2 * (1 - exp(- T * delta2)) / (T * (delta2 ^ 2) * delta1) + (delta1 + 2 * delta2) * (1 - exp(- T * (delta1 + delta2))) / (delta1 * delta2 * ((delta1 + delta2)^2)) ) + 
+           M_bar * (1 / (delta1 * delta2) + exp(- T * delta1) / (delta1 * delta2) - exp(- T * (delta1 + delta2)) / (delta2 * (delta1 + delta2)) - (1 - exp(- T * delta2)) / (T * (delta2 ^ 2) * delta1) - 2 * (1 - exp(- T * delta1)) / (T * (delta1 ^ 2) * delta2) + (delta2 + 2 * delta1) * (1 - exp(- T * (delta1 + delta2))) / (delta1 * delta2 * ((delta1 + delta2)^2)) ) +
+           N_bar * (1 / (delta2 ^ 2) + exp(- delta2 * T) / (delta2 ^ 2) - 0.5 * exp(- 2 * delta2 * T) / (delta2 ^ 2) - 3 * (1 - exp(- T * delta2)) / (T * (delta2 ^ 3)) + 0.75 * (1 - exp(- 2 * T * delta2)) / (T * (delta2 ^ 3)) ) + 
+           O_bar * (1 / (delta1 * delta2) + (exp(- T * delta1) + exp(- T * delta2)) / (delta1 * delta2) - (1/delta1 + 1/delta2) * exp(- T * (delta1 * delta2)) / (delta1 + delta2) - 2 * exp(-T * (delta1 + delta2)) / ((delta1 + delta2)^2) - T * exp(-T * (delta1 + delta2)) / (delta1 + delta2) - 2 * (1 - exp(- T * delta1)) / (T * delta2 * (delta1^2)) - 2 * (1 - exp(- T * delta2)) / (T * delta1 * (delta2^2)) + 
+                      2 * (1 - exp(- T * (delta1 + delta2))) / (T * ((delta1 + delta2)^3))  + (1 / delta1 + 1 / delta2) * (1 - exp(- T * (delta1 + delta2))) / (T * ((delta1 + delta2)^2)) + (1 - exp(- T * (delta1 + delta2))) / (T * delta1 * delta2 * (delta1 + delta2) ) )
+    
+    return(- value)
+}
+
+
 
 # - CIR model
 ### -  A(t,T) function (already divided by T-t)
@@ -166,7 +214,7 @@ B_CIR <- function(T, sigma, delta){
 
 # - Measurement error as in Blackburn and Sherris with exponentiated parameters
 meas_err_BS <- function(r1, r2, rc){
-  
+  n_ages <- nrow(mu_bar)
   H <- matrix(0, n_ages, n_ages)
   
   for(age in 1:n_ages){
@@ -178,6 +226,7 @@ meas_err_BS <- function(r1, r2, rc){
 
 # - Measurement error as in Xu, Sherris and Ziveyi (with exponentiated parameters to ensure positivity)
 meas_err_XSZ <- function(r1, r2){
+  n_ages <- nrow(mu_bar)
   for(age in 1:n_ages){
     # - Original diag from Blackburn-Sherris (2013)
     H[age,age] <- exp(r1) * exp(exp(r2) * age)
@@ -269,6 +318,14 @@ parest2cov <- function(dg_l_Sigma_chol, odg_Sigma_chol){
   return(Sigma_el)
 }
 
+
+get_L <- function(sigma_dg, Sigma_cov){
+  dg_l_Sigma_chol <- cov2par(c(sigma_dg^2, Sigma_cov))$dg_l_Sigma_chol
+  odg_Sigma_chol <- cov2par(c(sigma_dg^2, Sigma_cov))$odg_Sigma_chol
+  Low_chol <- low_trg_fill_0diag(odg_Sigma_chol)
+  diag(Low_chol) <- exp(dg_l_Sigma_chol)
+  return(Low_chol)
+}
 
 # - This function takes the maximum between 1e-10 and X elementwise for the vector X. This is useful to bound below the value of X
 # - by construction in the CIR model
@@ -725,6 +782,7 @@ nLL_CIR_uKD_bd <- function(vdParameters, mu_bar){
   log_lik <- sum(log(F_ti) + (v_ti^2) / F_ti)
   return(log_lik)
 }
+
 
 
 
