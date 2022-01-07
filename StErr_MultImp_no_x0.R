@@ -2,15 +2,15 @@
 
 # - Step 0: Build log-likelihood
 
-nLL_BSi_serr <- function(delta, kappa, l_sigma, l_r){
+nLL_BSi_serr <- function(delta, kappa, l_sigma, l_r, mu_bar, X_rnd_nLL){
   n_factors <- length(kappa)
+  n_ages <- nrow(mu_bar)
+  n_years <- ncol(mu_bar)
+  
   # - Parameters
   r_c <- l_r[3]
   r_1 <- l_r[1]
   r_2 <- l_r[2]
-  
-  n_ages <- nrow(mu_bar)   # - Number of ages
-  n_years <- ncol(mu_bar)  # - Number of years
   
   # - Def. variables
   ## - State variables
@@ -21,7 +21,7 @@ nLL_BSi_serr <- function(delta, kappa, l_sigma, l_r){
   B_tT <- matrix(NA, n_ages, n_factors)
   
   # - Initial values of states and of covariance
-  X_t <- X_rnd
+  X_t <- X_rnd_nLL
   
   H <- matrix(0, n_ages, n_ages) # - Age covariance
   R <- matrix(0, n_factors, n_factors) # - Factor covariance
@@ -48,20 +48,25 @@ nLL_BSi_serr <- function(delta, kappa, l_sigma, l_r){
   return(sum(log_lik))
 }
 
-nLL_BSi_serr_H <- function(vdParameters){
+nLL_BSi_serr_H <- function(vdParameters, mu_bar, X_rnd_H){
+  n_factors <- nrow(X_rnd_H)
+
   delta = vdParameters[1:n_factors]
   kappa = vdParameters[(n_factors+1):(n_factors*2)]
   l_sigma = vdParameters[(n_factors*2+1):(n_factors*3)]
   l_r = vdParameters[(n_factors*3+1):(n_factors*4)]
   
-  n_ages <- nrow(mu_bar)   # - Number of ages
-  n_years <- ncol(mu_bar)  # - Number of years
+  n_ages <- nrow(mu_bar)
+  n_years <- ncol(mu_bar)
   
   # - Parameters
   r_c <- l_r[3]
   r_1 <- l_r[1]
   r_2 <- l_r[2]
-
+  
+  n_ages <- nrow(mu_bar)   # - Number of ages
+  n_years <- ncol(mu_bar)  # - Number of years
+  
   # - Def. variables
   ## - State variables
   X_t <- matrix(NA, n_factors, (n_years+1)) # - state (including state at t=0)
@@ -71,7 +76,7 @@ nLL_BSi_serr_H <- function(vdParameters){
   B_tT <- matrix(NA, n_ages, n_factors)
   
   # - Initial values of states and of covariance
-  X_t <- X_rnd
+  X_t <- X_rnd_H
   
   H <- matrix(0, n_ages, n_ages) # - Age covariance
   R <- matrix(0, n_factors, n_factors) # - Factor covariance
@@ -98,7 +103,7 @@ nLL_BSi_serr_H <- function(vdParameters){
   return(sum(log_lik))
 }
 
-co_asc_BSi_MI <- function(mu_bar, X_rnd, delta, kappa, sigma, r, max_iter=200, tol_lik=0.1){
+co_asc_BSi_MI <- function(mu_bar, X_random, delta, kappa, sigma, r, max_iter=200, tol_lik=0.1){
   
   n_factors <- length(kappa)
   n_ages <- nrow(mu_bar)
@@ -112,34 +117,38 @@ co_asc_BSi_MI <- function(mu_bar, X_rnd, delta, kappa, sigma, r, max_iter=200, t
   l_sigma_par <- log(sigma)
   l_r_par <- log(r)
   
-  iter_count <- 1
+  iter_count <- 0
+  
   repeat{
+    neg_loglikelihood <- nLL_BSi_serr(delta_par, kappa_par, l_sigma_par, l_r_par, mu_bar, X_rnd_nLL = X_random)
+    iter_count <- iter_count + 1
     
-    delta_opt_BSi_KD <- optim(delta_par, nLL_BSi_serr, kappa=kappa_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    delta_opt_BSi_KD <- optim(delta_par, nLL_BSi_serr, kappa=kappa_par, l_sigma=l_sigma_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
     delta_par <- delta_opt_BSi_KD$par
     
-    kappa_opt_BSi_KD <- optim(kappa_par, nLL_BSi_serr, delta=delta_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    kappa_opt_BSi_KD <- optim(kappa_par, nLL_BSi_serr, delta=delta_par, l_sigma=l_sigma_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
     kappa_par <- kappa_opt_BSi_KD$par
     
-    l_sigma_opt_BSi_KD <- optim(l_sigma_par, nLL_BSi_serr, delta=delta_par, kappa=kappa_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    l_sigma_opt_BSi_KD <- optim(l_sigma_par, nLL_BSi_serr, delta=delta_par, kappa=kappa_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
     l_sigma_par <- l_sigma_opt_BSi_KD$par
     
-    l_r_opt_BSi_KD <- optim(l_r_par, nLL_BSi_serr, delta=delta_par, kappa=kappa_par, l_sigma=l_sigma_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    l_r_opt_BSi_KD <- optim(l_r_par, nLL_BSi_serr, delta=delta_par, kappa=kappa_par, l_sigma=l_sigma_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
     l_r_par <- l_r_opt_BSi_KD$par
     
-    if (abs(nLL_BSi_serr(delta_par, kappa_par, l_sigma_par, l_r_par) - neg_loglikelihood) < tol_lik | (iter_count==max_iter)){
+    neg_loglikelihood_condition <- nLL_BSi_serr(delta_par, kappa_par, l_sigma_par, l_r_par, mu_bar, X_rnd_nLL = X_random)
+    
+    if((abs(neg_loglikelihood_condition - neg_loglikelihood) < tol_lik) | (iter_count==max_iter)){
       break
-    }else{
-      # - Update log-likelihood
-      neg_loglikelihood <- nLL_BSi_serr(delta_par, kappa_par, l_sigma_par, l_r_par)
-      iter_count <- iter_count + 1
     }
   }
   
   return(list(delta=delta_par, kappa=kappa_par, l_sigma=l_sigma_par, l_r=l_r_par))
 }
 
-par_cov_BSi <- function(x0, delta, kappa, sigma, r, mu_bar, D_se=50){
+
+# - Function for the calculation of the covariance matrix and of the standard errors
+# - It takes the parameter values and the number of draws as input (default value set equal to 50)
+CovEst_MI_BSi <- function(x0, delta, kappa, sigma, r, mu_bar, D_se=50){
   n_factors <- length(kappa)
   n_ages <- nrow(mu_bar)
   n_years <- ncol(mu_bar)
@@ -156,7 +165,7 @@ par_cov_BSi <- function(x0, delta, kappa, sigma, r, mu_bar, D_se=50){
   # - Step 2 and 3: sample states (in iteration) and estimate
   ## - Step 2.1: Set D_se and define vector of sampled states
   #  D_se <- 50
-  X_rnd <- matrix(0, n_factors, n_years+1)
+  X_rnd <- matrix(0, n_factors, n_years)
   
   ## - Step 2.2: Initialise V_bar, 
   V_bar <- matrix(0, length(c(delta, kappa, sigma, r)), length(c(delta, kappa, sigma, r))) 
@@ -171,8 +180,8 @@ par_cov_BSi <- function(x0, delta, kappa, sigma, r, mu_bar, D_se=50){
     }
     
     # - Step 3: optimization and parameter storage (the covariance is not stored) - Call Coordinate Ascent
-    p_opt_se <- co_asc_BSi_MI(mu_bar, X_rnd, delta, kappa, sigma, r, max_iter=200, tol_lik=0.1)
-    hessian_comp <- hessian(nLL_BSi_serr_H, c(p_opt_se$delta, p_opt_se$kappa, p_opt_se$l_sigma, p_opt_se$l_r), method="Richardson")
+    p_opt_se <- co_asc_BSi_MI(mu_bar=mu_bar, X_random=X_rnd, delta, kappa, sigma, r, max_iter=200, tol_lik=0.1)
+    hessian_comp <- hessian(nLL_BSi_serr_H, c(p_opt_se$delta, p_opt_se$kappa, p_opt_se$l_sigma, p_opt_se$l_r), method="Richardson", mu_bar=mu_bar, X_rnd_H=X_rnd)
     
     V_bar <- V_bar + ginv(hessian_comp) / D_se
     B_table[d,] <- c(p_opt_se$delta, p_opt_se$kappa, p_opt_se$l_sigma, p_opt_se$l_r)
@@ -182,20 +191,19 @@ par_cov_BSi <- function(x0, delta, kappa, sigma, r, mu_bar, D_se=50){
   
   B_cov <- cov(B_table) # (check whether it takes population covariance or sample covariance)
   
-  Cov_est_BSi <- V_bar + B_cov * (1 + 1/D_se)
+  Cov_est <- V_bar + B_cov * (1 + 1/D_se)
   
-  serr_est_BSi <- sqrt(diag(Cov_est_BSi))
+  serr_est <- sqrt(diag(Cov_est))
   
   # - Step 5: Back-transformation for the original parameters
   
-  nabla_grad_BSi <- diag(c(rep(1, n_factors*2), sigma, r))
+  nabla_grad <- diag(c(rep(1, n_factors*2), sigma, r))
   
-  Cov_est_BSi_orig <- t(nabla_grad_BSi) %*% Cov_est_BSi %*% nabla_grad_BSi
+  Cov_est_orig <- t(nabla_grad) %*% Cov_est %*% nabla_grad
   
-  serr_est_BSi_orig <- sqrt(diag(Cov_est_BSi_orig))
+  serr_est_orig <- sqrt(diag(Cov_est_orig))
   
-  
-  return(list(Cov_par_est = Cov_est_BSi_orig, St_err=serr_est_BSi_orig))
+  return(list(Cov_par_est = Cov_est_orig, St_err=serr_est_orig))
   
 }
 
@@ -227,7 +235,7 @@ parest2cov_jac <- function(dg_l_Sigma_chol_odg_Sigma_chol){
   return(Sigma_el)
 }
 
-nLL_BSd_3F_serr <- function(delta, kappa, dg_l_Sigma_chol, odg_Sigma_chol, l_r){
+nLL_BSd_3F_serr <- function(delta, kappa, dg_l_Sigma_chol, odg_Sigma_chol, l_r, mu_bar, X_rnd_nLL){
   
   n_factors <- 3
   n_ages <- nrow(mu_bar)
@@ -249,7 +257,7 @@ nLL_BSd_3F_serr <- function(delta, kappa, dg_l_Sigma_chol, odg_Sigma_chol, l_r){
   B_tT <- matrix(NA, n_ages, n_factors)
   
   # - Initial values of states and of covariance
-  X_t <- X_rnd
+  X_t <- X_rnd_nLL
   
   H <- matrix(0, n_ages, n_ages) # - Age covariance
   R <- matrix(0, n_factors, n_factors) # - Factor covariance
@@ -293,7 +301,7 @@ nLL_BSd_3F_serr <- function(delta, kappa, dg_l_Sigma_chol, odg_Sigma_chol, l_r){
   return(sum(log_lik))
 }
 
-nLL_BSd_3F_serr_H <- function(vdParameters){
+nLL_BSd_3F_serr_H <- function(vdParameters, mu_bar, X_rnd_H){
   
   n_factors <- 3
   # - Parameters
@@ -319,7 +327,7 @@ nLL_BSd_3F_serr_H <- function(vdParameters){
   B_tT <- matrix(NA, n_ages, n_factors)
   
   # - Initial values of states and of covariance
-  X_t <- X_rnd
+  X_t <- X_rnd_H
   
   H <- matrix(0, n_ages, n_ages) # - Age covariance
   R <- matrix(0, n_factors, n_factors) # - Factor covariance
@@ -363,7 +371,7 @@ nLL_BSd_3F_serr_H <- function(vdParameters){
   return(sum(log_lik))
 }
 
-co_asc_BSd_3F_MI <- function(mu_bar, X_rnd, delta, kappa, sigma_dg, Sigma_cov, r, max_iter=200, tol_lik=0.1){
+co_asc_BSd_3F_MI <- function(mu_bar, X_random, delta, kappa, sigma_dg, Sigma_cov, r, max_iter=200, tol_lik=0.1){
   
   # - Matrix for parameter estimates storage
   n_factors <- 3
@@ -379,37 +387,35 @@ co_asc_BSd_3F_MI <- function(mu_bar, X_rnd, delta, kappa, sigma_dg, Sigma_cov, r
   odg_Sigma_chol_par <- cov2par(c(sigma_dg^2, Sigma_cov))$odg_Sigma_chol
   l_r_par <- log(r)
   
-  iter_count <- 1
+  iter_count <- 0
   repeat{
+    neg_loglikelihood <- nLL_BSd_3F_serr(delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par, mu_bar, X_rnd_nLL = X_random)
+    iter_count <- iter_count + 1
     
-    delta_opt_BSd_3F_KD <- optim(delta_par, nLL_BSd_3F_serr, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    delta_opt_BSd_3F_KD <- optim(delta_par, nLL_BSd_3F_serr, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
     delta_par <- delta_opt_BSd_3F_KD$par
     
-    kappa_opt_BSd_3F_KD <- optim(kappa_par, nLL_BSd_3F_serr, delta=delta_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    kappa_opt_BSd_3F_KD <- optim(kappa_par, nLL_BSd_3F_serr, delta=delta_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
     kappa_par <- kappa_opt_BSd_3F_KD$par
     
-    dg_l_Sigma_chol_opt_BSd_3F_KD <- optim(dg_l_Sigma_chol_par, nLL_BSd_3F_serr, delta=delta_par, kappa=kappa_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    dg_l_Sigma_chol_opt_BSd_3F_KD <- optim(dg_l_Sigma_chol_par, nLL_BSd_3F_serr, delta=delta_par, kappa=kappa_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
     dg_l_Sigma_chol_par <- dg_l_Sigma_chol_opt_BSd_3F_KD$par
     
-    odg_Sigma_chol_opt_BSd_3F_KD <- optim(odg_Sigma_chol_par, nLL_BSd_3F_serr, delta=delta_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    odg_Sigma_chol_opt_BSd_3F_KD <- optim(odg_Sigma_chol_par, nLL_BSd_3F_serr, delta=delta_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
     odg_Sigma_chol_par <- odg_Sigma_chol_opt_BSd_3F_KD$par
     
-    l_r_opt_BSd_3F_KD <- optim(l_r_par, nLL_BSd_3F_serr, delta=delta_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    l_r_opt_BSd_3F_KD <- optim(l_r_par, nLL_BSd_3F_serr, delta=delta_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
     l_r_par <- l_r_opt_BSd_3F_KD$par
     
-    if (abs(nLL_BSd_3F_serr(delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par) - neg_loglikelihood) < tol_lik  | (iter_count==max_iter) ){
+    if (abs(nLL_BSd_3F_serr(delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par, mu_bar, X_rnd_nLL = X_random) - neg_loglikelihood) < tol_lik  | (iter_count==max_iter) ){
       break
-    }else{
-      # - Update log-likelihood
-      neg_loglikelihood <- nLL_BSd_3F_serr(delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par)
-      iter_count <- iter_count + 1
     }
   }
   
   return(list(delta=delta_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par))
 }
 
-par_cov_BSd_3F <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, D_se=50){
+CovEst_MI_BSd_3F <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, D_se=50){
   n_factors <- length(kappa)
   n_ages <- nrow(mu_bar)
   n_years <- ncol(mu_bar)
@@ -429,7 +435,7 @@ par_cov_BSd_3F <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, D_s
   # - Step 2 and 3: sample states (in iteration) and estimate
   ## - Step 2.1: Set D_se and define vector of sampled states
   #  D_se <- 50
-  X_rnd <- matrix(0, n_factors, n_years+1)
+  X_rnd <- matrix(0, n_factors, n_years)
   
   ## - Step 2.2: Initialise V_bar, 
   V_bar <- matrix(0, length(c(delta, kappa, sigma_dg, Sigma_cov, r)), length(c(delta, kappa, sigma_dg, Sigma_cov, r))) 
@@ -444,8 +450,8 @@ par_cov_BSd_3F <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, D_s
     }
     
     # - Step 3: optimization and parameter storage (the covariance is not stored) - Call Coordinate Ascent
-    p_opt_se <- co_asc_BSd_3F_MI(mu_bar, X_rnd, delta, kappa, sigma_dg, Sigma_cov, r, max_iter=200, tol_lik=0.1)
-    hessian_comp <- hessian(nLL_BSd_3F_serr_H, c(p_opt_se$delta, p_opt_se$kappa, p_opt_se$dg_l_Sigma_chol, p_opt_se$odg_Sigma_chol, p_opt_se$l_r), method="Richardson")
+    p_opt_se <- co_asc_BSd_3F_MI(mu_bar=mu_bar, X_random=X_rnd, delta, kappa, sigma_dg, Sigma_cov, r, max_iter=200, tol_lik=0.1)
+    hessian_comp <- hessian(nLL_BSd_3F_serr_H, c(p_opt_se$delta, p_opt_se$kappa, p_opt_se$dg_l_Sigma_chol, p_opt_se$odg_Sigma_chol, p_opt_se$l_r), method="Richardson", mu_bar=mu_bar, X_rnd_H=X_rnd)
     
     V_bar <- V_bar + ginv(hessian_comp) / D_se
     B_table[d,] <- c(p_opt_se$delta, p_opt_se$kappa, p_opt_se$dg_l_Sigma_chol, p_opt_se$odg_Sigma_chol, p_opt_se$l_r)
@@ -455,9 +461,9 @@ par_cov_BSd_3F <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, D_s
   
   B_cov <- cov(B_table) # (check whether it takes population covariance or sample covariance)
   
-  Cov_est_BSd <- V_bar + B_cov * (1 + 1/D_se)
+  Cov_est <- V_bar + B_cov * (1 + 1/D_se)
   
-  serr_est_BSd <- sqrt(diag(Cov_est_BSd))
+  serr_est <- sqrt(diag(Cov_est))
   
   # - Step 5: Back-transformation for the original parameters
   
@@ -470,17 +476,18 @@ par_cov_BSd_3F <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, D_s
   Jac[10:15, 10:15] <- subjac
   diag(Jac[16:18, 16:18]) <- r
   
-  Cov_est_BSd_orig <- t(Jac) %*% Cov_est_BSd %*% Jac
+  Cov_est_orig <- t(Jac) %*% Cov_est %*% Jac
   
-  serr_est_BSd_orig <- sqrt(diag(Cov_est_BSd_orig))
+  serr_est_orig <- sqrt(diag(Cov_est_orig))
   
-  return(list(Cov_par_est = Cov_est_BSd_orig, St_err=serr_est_BSd_orig))
+  return(list(Cov_par_est = Cov_est_orig, St_err=serr_est_orig))
   
 }
 
+
 # ============ - AFNS independent model - =====================
 
-nLL_AFNSi_serr <- function(delta, kappa, l_sigma, l_r){
+nLL_AFNSi_serr <- function(delta, kappa, l_sigma, l_r, mu_bar, X_rnd_nLL){
   n_factors <- length(kappa)
   n_ages <- nrow(mu_bar)
   n_years <- ncol(mu_bar)
@@ -499,8 +506,8 @@ nLL_AFNSi_serr <- function(delta, kappa, l_sigma, l_r){
   B_tT <- matrix(NA, n_ages, n_factors)
   
   # - Initial values of states and of covariance
-  X_t <- X_rnd
-
+  X_t <- X_rnd_nLL
+  
   H <- matrix(0, n_ages, n_ages) # - Age covariance
   R <- matrix(0, n_factors, n_factors) # - Factor covariance
   
@@ -526,13 +533,15 @@ nLL_AFNSi_serr <- function(delta, kappa, l_sigma, l_r){
   return(sum(log_lik))
 }
 
-nLL_AFNSi_serr_H <- function(vdParameters){
+nLL_AFNSi_serr_H <- function(vdParameters, mu_bar, X_rnd_H){
+
+  n_factors <- 3
+  
   delta = vdParameters[1]
   kappa = vdParameters[2:4]
   l_sigma = vdParameters[5:7]
   l_r = vdParameters[8:10]
   
-  n_factors <- length(kappa)
   n_ages <- nrow(mu_bar)
   n_years <- ncol(mu_bar)
   
@@ -553,8 +562,8 @@ nLL_AFNSi_serr_H <- function(vdParameters){
   B_tT <- matrix(NA, n_ages, n_factors)
   
   # - Initial values of states and of covariance
-  X_t <- X_rnd
-
+  X_t <- X_rnd_H
+  
   H <- matrix(0, n_ages, n_ages) # - Age covariance
   R <- matrix(0, n_factors, n_factors) # - Factor covariance
   
@@ -580,7 +589,7 @@ nLL_AFNSi_serr_H <- function(vdParameters){
   return(sum(log_lik))
 }
 
-co_asc_AFNSi_MI <- function(mu_bar, X_rnd, delta, kappa, sigma, r, max_iter=200, tol_lik=0.1){
+co_asc_AFNSi_MI <- function(mu_bar, X_random, delta, kappa, sigma, r, max_iter=200, tol_lik=0.1){
   
   n_factors <- length(kappa)
   n_ages <- nrow(mu_bar)
@@ -594,34 +603,32 @@ co_asc_AFNSi_MI <- function(mu_bar, X_rnd, delta, kappa, sigma, r, max_iter=200,
   l_sigma_par <- log(sigma)
   l_r_par <- log(r)
   
-  iter_count <- 1
+  iter_count <- 0
   repeat{
-    
-    delta_opt_BSi_KD <- optim(delta_par, nLL_AFNSi_serr, kappa=kappa_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    neg_loglikelihood <- nLL_AFNSi_serr(delta_par, kappa_par, l_sigma_par, l_r_par, mu_bar, X_rnd_nLL = X_random)
+    iter_count <- iter_count + 1
+
+    delta_opt_BSi_KD <- optim(delta_par, nLL_AFNSi_serr, kappa=kappa_par, l_sigma=l_sigma_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
     delta_par <- delta_opt_BSi_KD$par
     
-    kappa_opt_BSi_KD <- optim(kappa_par, nLL_AFNSi_serr, delta=delta_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    kappa_opt_BSi_KD <- optim(kappa_par, nLL_AFNSi_serr, delta=delta_par, l_sigma=l_sigma_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
     kappa_par <- kappa_opt_BSi_KD$par
     
-    l_sigma_opt_BSi_KD <- optim(l_sigma_par, nLL_AFNSi_serr, delta=delta_par, kappa=kappa_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    l_sigma_opt_BSi_KD <- optim(l_sigma_par, nLL_AFNSi_serr, delta=delta_par, kappa=kappa_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
     l_sigma_par <- l_sigma_opt_BSi_KD$par
     
-    l_r_opt_BSi_KD <- optim(l_r_par, nLL_AFNSi_serr, delta=delta_par, kappa=kappa_par, l_sigma=l_sigma_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    l_r_opt_BSi_KD <- optim(l_r_par, nLL_AFNSi_serr, delta=delta_par, kappa=kappa_par, l_sigma=l_sigma_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
     l_r_par <- l_r_opt_BSi_KD$par
     
-    if (abs(nLL_AFNSi_serr(delta_par, kappa_par, l_sigma_par, l_r_par) - neg_loglikelihood) < tol_lik | (iter_count==max_iter)){
+    if (abs(nLL_AFNSi_serr(delta_par, kappa_par, l_sigma_par, l_r_par, mu_bar, X_rnd_nLL = X_random) - neg_loglikelihood) < tol_lik | (iter_count==max_iter)){
       break
-    }else{
-      # - Update log-likelihood
-      neg_loglikelihood <- nLL_AFNSi_serr(delta_par, kappa_par, l_sigma_par, l_r_par)
-      iter_count <- iter_count + 1
     }
   }
   
   return(list(delta=delta_par, kappa=kappa_par, l_sigma=l_sigma_par, l_r=l_r_par))
 }
 
-par_cov_AFNSi <- function(x0, delta, kappa, sigma, r, mu_bar, D_se=50){
+CovEst_MI_AFNSi <- function(x0, delta, kappa, sigma, r, mu_bar, D_se=50){
   n_factors <- length(kappa)
   n_ages <- nrow(mu_bar)
   n_years <- ncol(mu_bar)
@@ -638,7 +645,7 @@ par_cov_AFNSi <- function(x0, delta, kappa, sigma, r, mu_bar, D_se=50){
   # - Step 2 and 3: sample states (in iteration) and estimate
   ## - Step 2.1: Set D_se and define vector of sampled states
   #  D_se <- 50
-  X_rnd <- matrix(0, n_factors, n_years+1)
+  X_rnd <- matrix(0, n_factors, n_years)
   
   ## - Step 2.2: Initialise V_bar, 
   V_bar <- matrix(0, length(c(delta, kappa, sigma, r)), length(c(delta, kappa, sigma, r))) 
@@ -653,8 +660,8 @@ par_cov_AFNSi <- function(x0, delta, kappa, sigma, r, mu_bar, D_se=50){
     }
     
     # - Step 3: optimization and parameter storage (the covariance is not stored) - Call Coordinate Ascent
-    p_opt_se <- co_asc_AFNSi_MI(mu_bar, X_rnd, delta, kappa, sigma, r, max_iter=200, tol_lik=0.1)
-    hessian_comp <- hessian(nLL_AFNSi_serr_H, c(p_opt_se$delta, p_opt_se$kappa, p_opt_se$l_sigma, p_opt_se$l_r), method="Richardson")
+    p_opt_se <- co_asc_AFNSi_MI(mu_bar=mu_bar, X_random=X_rnd, delta, kappa, sigma, r, max_iter=200, tol_lik=0.1)
+    hessian_comp <- hessian(nLL_AFNSi_serr_H, c(p_opt_se$delta, p_opt_se$kappa, p_opt_se$l_sigma, p_opt_se$l_r), method="Richardson", mu_bar=mu_bar, X_rnd_H=X_rnd)
     
     V_bar <- V_bar + ginv(hessian_comp) / D_se
     B_table[d,] <- c(p_opt_se$delta, p_opt_se$kappa, p_opt_se$l_sigma, p_opt_se$l_r)
@@ -664,25 +671,25 @@ par_cov_AFNSi <- function(x0, delta, kappa, sigma, r, mu_bar, D_se=50){
   
   B_cov <- cov(B_table) # (check whether it takes population covariance or sample covariance)
   
-  Cov_est_AFNSi <- V_bar + B_cov * (1 + 1/D_se)
+  Cov_est <- V_bar + B_cov * (1 + 1/D_se)
   
-  serr_est_AFNSi <- sqrt(diag(Cov_est_AFNSi))
+  serr_est <- sqrt(diag(Cov_est))
   
   # - Step 5: Back-transformation for the original parameters
   
-  nabla_grad_AFNSi <- diag(c(rep(1, 4), sigma, r))
+  nabla_grad <- diag(c(rep(1, 4), sigma, r))
   
-  Cov_est_AFNSi_orig <- t(nabla_grad_AFNSi) %*% Cov_est_AFNSi %*% nabla_grad_AFNSi
+  Cov_est_orig <- t(nabla_grad) %*% Cov_est %*% nabla_grad
   
-  serr_est_AFNSi_orig <- sqrt(diag(Cov_est_AFNSi_orig))
+  serr_est_orig <- sqrt(diag(Cov_est_orig))
   
-  return(list(Cov_par_est = Cov_est_AFNSi_orig, St_err=serr_est_AFNSi_orig))
+  return(list(Cov_par_est = Cov_est_orig, St_err=serr_est_orig))
   
 }
 
 # ============ - AFNS dependent model - =====================
 
-nLL_AFNSd_serr <- function(delta, kappa, dg_l_Sigma_chol, odg_Sigma_chol, l_r){
+nLL_AFNSd_serr <- function(delta, kappa, dg_l_Sigma_chol, odg_Sigma_chol, l_r, mu_bar, X_rnd_nLL){
   
   n_factors <- 3
   n_ages <- nrow(mu_bar)
@@ -704,7 +711,7 @@ nLL_AFNSd_serr <- function(delta, kappa, dg_l_Sigma_chol, odg_Sigma_chol, l_r){
   B_tT <- matrix(NA, n_ages, n_factors)
   
   # - Initial values of states and of covariance
-  X_t <- X_rnd
+  X_t <- X_rnd_nLL
   
   H <- matrix(0, n_ages, n_ages) # - Age covariance
   R <- matrix(0, n_factors, n_factors) # - Factor covariance
@@ -748,7 +755,7 @@ nLL_AFNSd_serr <- function(delta, kappa, dg_l_Sigma_chol, odg_Sigma_chol, l_r){
   return(sum(log_lik))
 }
 
-nLL_AFNSd_serr_H <- function(vdParameters){
+nLL_AFNSd_serr_H <- function(vdParameters, mu_bar, X_rnd_H){
   
   n_factors <- 3
   # - Parameters
@@ -774,7 +781,7 @@ nLL_AFNSd_serr_H <- function(vdParameters){
   B_tT <- matrix(NA, n_ages, n_factors)
   
   # - Initial values of states and of covariance
-  X_t <- X_rnd
+  X_t <- X_rnd_H
   
   H <- matrix(0, n_ages, n_ages) # - Age covariance
   R <- matrix(0, n_factors, n_factors) # - Factor covariance
@@ -818,7 +825,7 @@ nLL_AFNSd_serr_H <- function(vdParameters){
   return(sum(log_lik))
 }
 
-co_asc_AFNSd_MI <- function(mu_bar, X_rnd, delta, kappa, sigma_dg, Sigma_cov, r, max_iter=200, tol_lik=0.1){
+co_asc_AFNSd_MI <- function(mu_bar, X_random, delta, kappa, sigma_dg, Sigma_cov, r, max_iter=200, tol_lik=0.1){
   
   # - Matrix for parameter estimates storage
   n_factors <- 3
@@ -834,37 +841,35 @@ co_asc_AFNSd_MI <- function(mu_bar, X_rnd, delta, kappa, sigma_dg, Sigma_cov, r,
   odg_Sigma_chol_par <- cov2par(c(sigma_dg^2, Sigma_cov))$odg_Sigma_chol
   l_r_par <- log(r)
   
-  iter_count <- 1
+  iter_count <- 0
   repeat{
+    neg_loglikelihood <- nLL_AFNSd_serr(delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par, mu_bar, X_rnd_nLL = X_random)
+    iter_count <- iter_count + 1
     
-    delta_opt_AFNSd_KD <- optim(delta_par, nLL_AFNSd_serr, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    delta_opt_AFNSd_KD <- optim(delta_par, nLL_AFNSd_serr, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
     delta_par <- delta_opt_AFNSd_KD$par
     
-    kappa_opt_AFNSd_KD <- optim(kappa_par, nLL_AFNSd_serr, delta=delta_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    kappa_opt_AFNSd_KD <- optim(kappa_par, nLL_AFNSd_serr, delta=delta_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
     kappa_par <- kappa_opt_AFNSd_KD$par
     
-    dg_l_Sigma_chol_opt_AFNSd_KD <- optim(dg_l_Sigma_chol_par, nLL_AFNSd_serr, delta=delta_par, kappa=kappa_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    dg_l_Sigma_chol_opt_AFNSd_KD <- optim(dg_l_Sigma_chol_par, nLL_AFNSd_serr, delta=delta_par, kappa=kappa_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
     dg_l_Sigma_chol_par <- dg_l_Sigma_chol_opt_AFNSd_KD$par
     
-    odg_Sigma_chol_opt_AFNSd_KD <- optim(odg_Sigma_chol_par, nLL_AFNSd_serr, delta=delta_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    odg_Sigma_chol_opt_AFNSd_KD <- optim(odg_Sigma_chol_par, nLL_AFNSd_serr, delta=delta_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
     odg_Sigma_chol_par <- odg_Sigma_chol_opt_AFNSd_KD$par
     
-    l_r_opt_AFNSd_KD <- optim(l_r_par, nLL_AFNSd_serr, delta=delta_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    l_r_opt_AFNSd_KD <- optim(l_r_par, nLL_AFNSd_serr, delta=delta_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
     l_r_par <- l_r_opt_AFNSd_KD$par
     
-    if (abs(nLL_AFNSd_serr(delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par) - neg_loglikelihood) < tol_lik  | (iter_count==max_iter) ){
+    if (abs(nLL_AFNSd_serr(delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par, mu_bar, X_rnd_nLL = X_random) - neg_loglikelihood) < tol_lik  | (iter_count==max_iter) ){
       break
-    }else{
-      # - Update log-likelihood
-      neg_loglikelihood <- nLL_AFNSd_serr(delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par)
-      iter_count <- iter_count + 1
     }
   }
   
   return(list(delta=delta_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par))
 }
 
-par_cov_AFNSd <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, D_se=50){
+CovEst_MI_AFNSd <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, D_se=50){
   n_factors <- length(kappa)
   n_ages <- nrow(mu_bar)
   n_years <- ncol(mu_bar)
@@ -884,7 +889,7 @@ par_cov_AFNSd <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, D_se
   # - Step 2 and 3: sample states (in iteration) and estimate
   ## - Step 2.1: Set D_se and define vector of sampled states
   #  D_se <- 50
-  X_rnd <- matrix(0, n_factors, n_years+1)
+  X_rnd <- matrix(0, n_factors, n_years)
   
   ## - Step 2.2: Initialise V_bar, 
   V_bar <- matrix(0, length(c(delta, kappa, sigma_dg, Sigma_cov, r)), length(c(delta, kappa, sigma_dg, Sigma_cov, r))) 
@@ -899,8 +904,8 @@ par_cov_AFNSd <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, D_se
     }
     
     # - Step 3: optimization and parameter storage (the covariance is not stored) - Call Coordinate Ascent
-    p_opt_se <- co_asc_AFNSd_MI(mu_bar, X_rnd, delta, kappa, sigma_dg, Sigma_cov, r, max_iter=200, tol_lik=0.1)
-    hessian_comp <- hessian(nLL_AFNSd_serr_H, c(p_opt_se$delta, p_opt_se$kappa, p_opt_se$dg_l_Sigma_chol, p_opt_se$odg_Sigma_chol, p_opt_se$l_r), method="Richardson")
+    p_opt_se <- co_asc_AFNSd_MI(mu_bar=mu_bar, X_random=X_rnd, delta, kappa, sigma_dg, Sigma_cov, r, max_iter=200, tol_lik=0.1)
+    hessian_comp <- hessian(nLL_AFNSd_serr_H, c(p_opt_se$delta, p_opt_se$kappa, p_opt_se$dg_l_Sigma_chol, p_opt_se$odg_Sigma_chol, p_opt_se$l_r), method="Richardson", mu_bar=mu_bar, X_rnd_H=X_rnd)
     
     V_bar <- V_bar + ginv(hessian_comp) / D_se
     B_table[d,] <- c(p_opt_se$delta, p_opt_se$kappa, p_opt_se$dg_l_Sigma_chol, p_opt_se$odg_Sigma_chol, p_opt_se$l_r)
@@ -910,9 +915,9 @@ par_cov_AFNSd <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, D_se
   
   B_cov <- cov(B_table) # (check whether it takes population covariance or sample covariance)
   
-  Cov_est_AFNSd <- V_bar + B_cov * (1 + 1/D_se)
+  Cov_est <- V_bar + B_cov * (1 + 1/D_se)
   
-  serr_est_AFNSd <- sqrt(diag(Cov_est_AFNSd))
+  serr_est <- sqrt(diag(Cov_est))
   
   # - Step 5: Back-transformation for the original parameters
   
@@ -925,17 +930,20 @@ par_cov_AFNSd <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, D_se
   Jac[5:10, 5:10] <- subjac
   diag(Jac[11:13, 11:13]) <- r
   
-  Cov_est_AFNSd_orig <- t(Jac) %*% Cov_est_AFNSd %*% Jac
+  Cov_est_orig <- t(Jac) %*% Cov_est %*% Jac
   
-  serr_est_AFNSd_orig <- sqrt(diag(Cov_est_AFNSd_orig))
+  serr_est_orig <- sqrt(diag(Cov_est_orig))
   
-  return(list(Cov_par_est = Cov_est_AFNSd_orig, St_err=serr_est_AFNSd_orig))
+  return(list(Cov_par_est = Cov_est_orig, St_err=serr_est_orig))
   
 }
 
+
+
+
 # ============ - CIR model - =====================
 
-nLL_CIR_serr <- function(delta, l_kappa, l_sigma, l_theta_Q, l_theta_P, l_r, mu_bar){
+nLL_CIR_serr <- function(delta, l_kappa, l_sigma, l_theta_Q, l_theta_P, l_r, mu_bar, X_rnd_nLL){
   n_factors <- length(kappa)
   n_ages <- nrow(mu_bar)
   n_years <- ncol(mu_bar)
@@ -954,7 +962,7 @@ nLL_CIR_serr <- function(delta, l_kappa, l_sigma, l_theta_Q, l_theta_P, l_r, mu_
   B_tT <- matrix(NA, n_ages, n_factors)
   
   # - Initial values of states and of covariance
-  X_t <- X_rnd
+  X_t <- X_rnd_nLL
   
   H <- matrix(0, n_ages, n_ages) # - Age covariance
   R <- matrix(0, n_factors, n_factors * (n_years + 1)) # - Factor covariance
@@ -981,7 +989,9 @@ nLL_CIR_serr <- function(delta, l_kappa, l_sigma, l_theta_Q, l_theta_P, l_r, mu_
   return(sum(log_lik))
 }
 
-nLL_CIR_serr_H <- function(vdParameters){
+nLL_CIR_serr_H <- function(vdParameters, mu_bar, X_rnd_H){
+  n_factors <- nrow(X_rnd_H)
+  
   delta <- vdParameters[1:(n_factors)]
   l_kappa <- vdParameters[(n_factors+1):(n_factors*2)] # - take logs to ensure positivity
   l_sigma <- vdParameters[(n_factors*2+1):(n_factors*3)]
@@ -991,7 +1001,6 @@ nLL_CIR_serr_H <- function(vdParameters){
   r_1 <- vdParameters[n_factors*5 + 1]
   r_2 <- vdParameters[n_factors*5 + 2]
   
-  n_factors <- length(l_kappa)
   n_ages <- nrow(mu_bar)
   n_years <- ncol(mu_bar)
   
@@ -1004,7 +1013,7 @@ nLL_CIR_serr_H <- function(vdParameters){
   B_tT <- matrix(NA, n_ages, n_factors)
   
   # - Initial values of states and of covariance
-  X_t <- X_rnd
+  X_t <- X_rnd_H
   
   H <- matrix(0, n_ages, n_ages) # - Age covariance
   R <- matrix(0, n_factors, n_factors * (n_years + 1)) # - Factor covariance
@@ -1031,7 +1040,7 @@ nLL_CIR_serr_H <- function(vdParameters){
   return(sum(log_lik))
 }
 
-co_asc_CIR_MI <- function(mu_bar, X_rnd, delta, kappa, sigma, theta_Q, theta_P, r, max_iter=200, tol_lik=0.1){
+co_asc_CIR_MI <- function(mu_bar, X_random, delta, kappa, sigma, theta_Q, theta_P, r, max_iter=200, tol_lik=0.1){
   
   n_factors <- length(kappa)
   n_ages <- nrow(mu_bar)
@@ -1047,43 +1056,41 @@ co_asc_CIR_MI <- function(mu_bar, X_rnd, delta, kappa, sigma, theta_Q, theta_P, 
   l_theta_P_par <- log(theta_P)
   l_r_par <- log(r)
   
-  iter_count <- 1
+  iter_count <- 0
   repeat{
     
-    delta_opt_CIR_KD <- optim(delta_par, nLL_CIR_serr, mu_bar=mu_bar, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_theta_Q=l_theta_Q_par, l_theta_P=l_theta_P_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
+    neg_loglikelihood <- nLL_CIR_serr(delta_par, l_kappa_par, l_sigma_par, l_theta_Q_par, l_theta_P_par, l_r_par, mu_bar, X_rnd_nLL = X_random)
+    iter_count <- iter_count + 1
+
+    delta_opt_CIR_KD <- optim(delta_par, nLL_CIR_serr, mu_bar=mu_bar, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_theta_Q=l_theta_Q_par, l_theta_P=l_theta_P_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
     delta_par <- delta_opt_CIR_KD$par
     
-    l_kappa_opt_CIR_KD <- optim(l_kappa_par, nLL_CIR_serr, mu_bar=mu_bar, delta=delta_par, l_sigma=l_sigma_par, l_theta_Q=l_theta_Q_par, l_theta_P=l_theta_P_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
+    l_kappa_opt_CIR_KD <- optim(l_kappa_par, nLL_CIR_serr, mu_bar=mu_bar, delta=delta_par, l_sigma=l_sigma_par, l_theta_Q=l_theta_Q_par, l_theta_P=l_theta_P_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
     l_kappa_par <- l_kappa_opt_CIR_KD$par
     
-    l_sigma_opt_CIR_KD <- optim(l_sigma_par, nLL_CIR_serr, mu_bar=mu_bar, delta=delta_par, l_kappa=l_kappa_par, l_theta_Q=l_theta_Q_par, l_theta_P=l_theta_P_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
+    l_sigma_opt_CIR_KD <- optim(l_sigma_par, nLL_CIR_serr, mu_bar=mu_bar, delta=delta_par, l_kappa=l_kappa_par, l_theta_Q=l_theta_Q_par, l_theta_P=l_theta_P_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
     l_sigma_par <- l_sigma_opt_CIR_KD$par
     
-    l_theta_Q_opt_CIR_KD <- optim(l_theta_Q_par, nLL_CIR_serr, mu_bar=mu_bar, delta=delta_par, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_theta_P=l_theta_P_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
+    l_theta_Q_opt_CIR_KD <- optim(l_theta_Q_par, nLL_CIR_serr, mu_bar=mu_bar, delta=delta_par, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_theta_P=l_theta_P_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
     l_theta_Q_par <- l_theta_Q_opt_CIR_KD$par
     
-    l_theta_P_opt_CIR_KD <- optim(l_theta_P_par, nLL_CIR_serr, mu_bar=mu_bar, delta=delta_par, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_theta_Q=l_theta_Q_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
+    l_theta_P_opt_CIR_KD <- optim(l_theta_P_par, nLL_CIR_serr, mu_bar=mu_bar, delta=delta_par, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_theta_Q=l_theta_Q_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
     l_theta_P_par <- l_theta_P_opt_CIR_KD$par
     
-    l_r_opt_CIR_KD <- optim(l_r_par, nLL_CIR_serr, mu_bar=mu_bar, delta=delta_par, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_theta_Q=l_theta_Q_par, l_theta_P=l_theta_P_par, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
+    l_r_opt_CIR_KD <- optim(l_r_par, nLL_CIR_serr, mu_bar=mu_bar, delta=delta_par, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_theta_Q=l_theta_Q_par, l_theta_P=l_theta_P_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
     l_r_par <- l_r_opt_CIR_KD$par
     
-    if (abs(nLL_CIR_serr(delta_par, l_kappa_par, l_sigma_par, l_theta_Q_par, l_theta_P_par, l_r_par) - neg_loglikelihood) < tol_lik | (iter_count==max_iter)){
+    if (abs(nLL_CIR_serr(delta_par, l_kappa_par, l_sigma_par, l_theta_Q_par, l_theta_P_par, l_r_par, mu_bar, X_rnd_nLL = X_random) - neg_loglikelihood) < tol_lik | (iter_count==max_iter)){
       break
-    }else{
-      # - Update log-likelihood
-      neg_loglikelihood <- nLL_CIR_serr(delta_par, l_kappa_par, l_sigma_par, l_theta_Q_par, l_theta_P_par, l_r_par)
-      iter_count <- iter_count + 1
     }
   }
   
   return(list(delta=delta_par, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_theta_Q=l_theta_Q_par, l_theta_P=l_theta_P_par, l_r=l_r_par))
 }
 
-
 # - Function for the calculation of the covariance matrix and of the standard errors
 # - It takes the parameter values and the number of draws as input (default value set equal to 50)
-par_cov_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, D_se=50){
+CovEst_MI_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, D_se=50){
   n_factors <- length(kappa)
   n_ages <- nrow(mu_bar)
   n_years <- ncol(mu_bar)
@@ -1111,12 +1118,12 @@ par_cov_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, D_
     
     ## - Step 2.3: Sample states
     for(t in 1:(n_years+1)){
-      X_rnd[,t] <- rmvnorm(n = 1, mean=X_t_sm[,t], sigma = S_t_sm[,((t-1) * n_factors + 1):(t * n_factors)])
+      X_rnd[,t] <- rtmvnorm(n=1, mu=X_t_sm[,t], sigma=S_t_sm[,((t-1) * n_factors + 1):(t * n_factors)], lb=rep(1e-10, n_factors)) # rmvnorm(n = 1, mean=X_t_sm[,t], sigma = S_t_sm[,((t-1) * n_factors + 1):(t * n_factors)])
     }
     
     # - Step 3: optimization and parameter storage (the covariance is not stored) - Call Coordinate Ascent
-    p_opt_se <- co_asc_CIR_MI(mu_bar, X_rnd, delta, kappa, sigma, theta_Q, theta_P, r, max_iter=200, tol_lik=0.1)
-    hessian_comp <- hessian(nLL_CIR_serr_H, c(p_opt_se$delta, p_opt_se$l_kappa, p_opt_se$l_sigma, p_opt_se$l_theta_Q, p_opt_se$l_theta_P, p_opt_se$l_r), method="Richardson")
+    p_opt_se <- co_asc_CIR_MI(mu_bar=mu_bar, X_random=X_rnd, delta, kappa, sigma, theta_Q, theta_P, r, max_iter=200, tol_lik=0.1)
+    hessian_comp <- hessian(nLL_CIR_serr_H, c(p_opt_se$delta, p_opt_se$l_kappa, p_opt_se$l_sigma, p_opt_se$l_theta_Q, p_opt_se$l_theta_P, p_opt_se$l_r), method="Richardson", mu_bar=mu_bar, X_rnd_H=X_rnd)
     
     V_bar <- V_bar + ginv(hessian_comp) / D_se
     B_table[d,] <- c(p_opt_se$delta, p_opt_se$l_kappa, p_opt_se$l_sigma, p_opt_se$l_theta_Q, p_opt_se$l_theta_P, p_opt_se$l_r)
@@ -1126,19 +1133,32 @@ par_cov_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, D_
   
   B_cov <- cov(B_table) # (check whether it takes population covariance or sample covariance)
   
-  Cov_est_CIR <- V_bar + B_cov * (1 + 1/D_se)
+  Cov_est <- V_bar + B_cov * (1 + 1/D_se)
   
-  serr_est_CIR <- sqrt(diag(Cov_est_CIR))
+  serr_est <- sqrt(diag(Cov_est))
   
   # - Step 5: Back-transformation for the original parameters
   
-  nabla_grad_CIR <- diag(c(rep(1, n_factors), kappa, sigma, theta_Q, theta_P, r))
+  nabla_grad <- diag(c(rep(1, n_factors), kappa, sigma, theta_Q, theta_P, r))
   
-  Cov_est_CIR_orig <- t(nabla_grad_CIR) %*% Cov_est_CIR %*% nabla_grad_CIR
+  Cov_est_orig <- t(nabla_grad) %*% Cov_est %*% nabla_grad
   
-  serr_est_CIR_orig <- sqrt(diag(Cov_est_CIR_orig))
+  serr_est_orig <- sqrt(diag(Cov_est_orig))
   
   
-  return(list(Cov_par_est = Cov_est_CIR_orig, St_err=serr_est_CIR_orig))
+  return(list(Cov_par_est = Cov_est_orig, St_err=serr_est_orig))
   
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
