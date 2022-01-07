@@ -1191,7 +1191,7 @@ CovEst_BS_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, 
     res_table[,(t_ex + 1):n_years] <- std_r[,t_sample]
     
     ## - 4.3) Sample x0 from the smoothing distribution - adjusted to ensure a lower bound of zero
-    x0_s <- l_bound(rmvnorm(n = 1, mu=X_t_sm, Sigma = S_t_sm))
+    x0_s <- rtmvnorm(n=1, mu=X_t_sm, sigma=S_t_sm, lb=rep(1e-10, n_factors))
     
     # - 3) Get mu_bar_star
     mu_bar_BS <- y_star_CIR(x0_s, delta, kappa, sigma, theta_Q, theta_P, r, res_table)
