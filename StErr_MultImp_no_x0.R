@@ -1062,22 +1062,22 @@ co_asc_CIR_MI <- function(mu_bar, X_random, delta, kappa, sigma, theta_Q, theta_
     neg_loglikelihood <- nLL_CIR_serr(delta_par, l_kappa_par, l_sigma_par, l_theta_Q_par, l_theta_P_par, l_r_par, mu_bar, X_rnd_nLL = X_random)
     iter_count <- iter_count + 1
 
-    delta_opt_CIR_KD <- optim(delta_par, nLL_CIR_serr, mu_bar=mu_bar, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_theta_Q=l_theta_Q_par, l_theta_P=l_theta_P_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
+    delta_opt_CIR_KD <- optim(delta_par, nLL_CIR_serr, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_theta_Q=l_theta_Q_par, l_theta_P=l_theta_P_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
     delta_par <- delta_opt_CIR_KD$par
     
-    l_kappa_opt_CIR_KD <- optim(l_kappa_par, nLL_CIR_serr, mu_bar=mu_bar, delta=delta_par, l_sigma=l_sigma_par, l_theta_Q=l_theta_Q_par, l_theta_P=l_theta_P_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
+    l_kappa_opt_CIR_KD <- optim(l_kappa_par, nLL_CIR_serr, delta=delta_par, l_sigma=l_sigma_par, l_theta_Q=l_theta_Q_par, l_theta_P=l_theta_P_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
     l_kappa_par <- l_kappa_opt_CIR_KD$par
     
-    l_sigma_opt_CIR_KD <- optim(l_sigma_par, nLL_CIR_serr, mu_bar=mu_bar, delta=delta_par, l_kappa=l_kappa_par, l_theta_Q=l_theta_Q_par, l_theta_P=l_theta_P_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
+    l_sigma_opt_CIR_KD <- optim(l_sigma_par, nLL_CIR_serr, delta=delta_par, l_kappa=l_kappa_par, l_theta_Q=l_theta_Q_par, l_theta_P=l_theta_P_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
     l_sigma_par <- l_sigma_opt_CIR_KD$par
     
-    l_theta_Q_opt_CIR_KD <- optim(l_theta_Q_par, nLL_CIR_serr, mu_bar=mu_bar, delta=delta_par, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_theta_P=l_theta_P_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
+    l_theta_Q_opt_CIR_KD <- optim(l_theta_Q_par, nLL_CIR_serr, delta=delta_par, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_theta_P=l_theta_P_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
     l_theta_Q_par <- l_theta_Q_opt_CIR_KD$par
     
-    l_theta_P_opt_CIR_KD <- optim(l_theta_P_par, nLL_CIR_serr, mu_bar=mu_bar, delta=delta_par, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_theta_Q=l_theta_Q_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
+    l_theta_P_opt_CIR_KD <- optim(l_theta_P_par, nLL_CIR_serr, delta=delta_par, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_theta_Q=l_theta_Q_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
     l_theta_P_par <- l_theta_P_opt_CIR_KD$par
     
-    l_r_opt_CIR_KD <- optim(l_r_par, nLL_CIR_serr, mu_bar=mu_bar, delta=delta_par, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_theta_Q=l_theta_Q_par, l_theta_P=l_theta_P_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
+    l_r_opt_CIR_KD <- optim(l_r_par, nLL_CIR_serr, delta=delta_par, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_theta_Q=l_theta_Q_par, l_theta_P=l_theta_P_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
     l_r_par <- l_r_opt_CIR_KD$par
     
     if (abs(nLL_CIR_serr(delta_par, l_kappa_par, l_sigma_par, l_theta_Q_par, l_theta_P_par, l_r_par, mu_bar, X_rnd_nLL = X_random) - neg_loglikelihood) < tol_lik | (iter_count==max_iter)){
@@ -1149,7 +1149,6 @@ CovEst_MI_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, 
   return(list(Cov_par_est = Cov_est_orig, St_err=serr_est_orig))
   
 }
-
 
 
 
