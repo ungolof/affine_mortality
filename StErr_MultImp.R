@@ -240,9 +240,10 @@ parest2cov_jac <- function(dg_l_Sigma_chol_odg_Sigma_chol){
   diag(Sigma_diffusion) <- sqrt(diag(Sigma_diffusion))
   
   Sigma_el <- rep(0, (length(dg_l_Sigma_chol_odg_Sigma_chol)))
-  count_vec <- 1
-  for(row in 1:n_factors){
-    for(col in 1:row){
+  Sigma_el[1:n_factors] <- diag(Sigma_diffusion)
+  count_vec <- n_factors + 1
+  for(row in 2:n_factors){
+    for(col in 1:(row-1)){
       Sigma_el[count_vec] <- Sigma_diffusion[row,col]
       count_vec <- count_vec + 1
     }
@@ -1191,6 +1192,50 @@ CovEst_MI_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, 
   return(list(Cov_par_est = Cov_est_orig, St_err=serr_est_orig))
   
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
