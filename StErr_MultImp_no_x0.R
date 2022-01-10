@@ -165,7 +165,7 @@ CovEst_MI_BSi <- function(x0, delta, kappa, sigma, r, mu_bar, D_se=50){
   # - Step 2 and 3: sample states (in iteration) and estimate
   ## - Step 2.1: Set D_se and define vector of sampled states
   #  D_se <- 50
-  X_rnd <- matrix(0, n_factors, n_years)
+  X_rnd <- matrix(0, n_factors, n_years+1)
   
   ## - Step 2.2: Initialise V_bar, 
   V_bar <- matrix(0, length(c(delta, kappa, sigma, r)), length(c(delta, kappa, sigma, r))) 
@@ -224,9 +224,10 @@ parest2cov_jac <- function(dg_l_Sigma_chol_odg_Sigma_chol){
   diag(Sigma_diffusion) <- sqrt(diag(Sigma_diffusion))
   
   Sigma_el <- rep(0, (length(dg_l_Sigma_chol_odg_Sigma_chol)))
-  count_vec <- 1
-  for(row in 1:n_factors){
-    for(col in 1:row){
+  Sigma_el[1:n_factors] <- diag(Sigma_diffusion)
+  count_vec <- n_factors + 1
+  for(row in 2:n_factors){
+    for(col in 1:(row-1)){
       Sigma_el[count_vec] <- Sigma_diffusion[row,col]
       count_vec <- count_vec + 1
     }
@@ -435,7 +436,7 @@ CovEst_MI_BSd_3F <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, D
   # - Step 2 and 3: sample states (in iteration) and estimate
   ## - Step 2.1: Set D_se and define vector of sampled states
   #  D_se <- 50
-  X_rnd <- matrix(0, n_factors, n_years)
+  X_rnd <- matrix(0, n_factors, n_years+1)
   
   ## - Step 2.2: Initialise V_bar, 
   V_bar <- matrix(0, length(c(delta, kappa, sigma_dg, Sigma_cov, r)), length(c(delta, kappa, sigma_dg, Sigma_cov, r))) 
@@ -645,7 +646,7 @@ CovEst_MI_AFNSi <- function(x0, delta, kappa, sigma, r, mu_bar, D_se=50){
   # - Step 2 and 3: sample states (in iteration) and estimate
   ## - Step 2.1: Set D_se and define vector of sampled states
   #  D_se <- 50
-  X_rnd <- matrix(0, n_factors, n_years)
+  X_rnd <- matrix(0, n_factors, n_years+1)
   
   ## - Step 2.2: Initialise V_bar, 
   V_bar <- matrix(0, length(c(delta, kappa, sigma, r)), length(c(delta, kappa, sigma, r))) 
@@ -889,7 +890,7 @@ CovEst_MI_AFNSd <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, D_
   # - Step 2 and 3: sample states (in iteration) and estimate
   ## - Step 2.1: Set D_se and define vector of sampled states
   #  D_se <- 50
-  X_rnd <- matrix(0, n_factors, n_years)
+  X_rnd <- matrix(0, n_factors, n_years+1)
   
   ## - Step 2.2: Initialise V_bar, 
   V_bar <- matrix(0, length(c(delta, kappa, sigma_dg, Sigma_cov, r)), length(c(delta, kappa, sigma_dg, Sigma_cov, r))) 
@@ -937,8 +938,6 @@ CovEst_MI_AFNSd <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, D_
   return(list(Cov_par_est = Cov_est_orig, St_err=serr_est_orig))
   
 }
-
-
 
 
 # ============ - CIR model - =====================
@@ -1149,6 +1148,15 @@ CovEst_MI_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, 
   return(list(Cov_par_est = Cov_est_orig, St_err=serr_est_orig))
   
 }
+
+
+
+
+
+
+
+
+
 
 
 
