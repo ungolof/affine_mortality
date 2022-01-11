@@ -1,3 +1,10 @@
+#======= Estimation of standard errors using multiple imputation
+
+library(mvtnorm)
+library(TruncatedNormal)
+library(numDeriv)
+library(MASS)
+
 # ============ - Blackburn-Sherris independent model (version without x0)
 
 # - Step 0: Build log-likelihood
@@ -203,12 +210,13 @@ CovEst_MI_BSi <- function(x0, delta, kappa, sigma, r, mu_bar, D_se=50){
   
   serr_est_orig <- sqrt(diag(Cov_est_orig))
   
-  return(list(Cov_par_est = Cov_est_orig, St_err=serr_est_orig))
+  return(list(Cov_par_est = Cov_est_orig, St_err=list(delta=serr_est_orig[1:n_factors], kappa=serr_est_orig[(n_factors+1):(n_factors*2)], sigma=serr_est_orig[(2*n_factors+1):(n_factors*3)], r1=serr_est_orig[(3*n_factors+1)], r2=serr_est_orig[(3*n_factors+2)], rc=serr_est_orig[(3*n_factors+3)])))
   
 }
 
 #============= - Blackburn-Sherris dependent 3 factors - ==========================
 
+# - Version with variance
 parest2cov_jac <- function(dg_l_Sigma_chol_odg_Sigma_chol){
   
   n_factors <- (-1 + sqrt(1 + 8 * length(dg_l_Sigma_chol_odg_Sigma_chol))) * 0.5
@@ -221,7 +229,7 @@ parest2cov_jac <- function(dg_l_Sigma_chol_odg_Sigma_chol){
   
   Sigma_diffusion <- matrix(NA, n_factors, n_factors)
   Sigma_diffusion <- Low_Chol %*% t(Low_Chol)
-  diag(Sigma_diffusion) <- sqrt(diag(Sigma_diffusion))
+#  diag(Sigma_diffusion) <- sqrt(diag(Sigma_diffusion))
   
   Sigma_el <- rep(0, (length(dg_l_Sigma_chol_odg_Sigma_chol)))
   Sigma_el[1:n_factors] <- diag(Sigma_diffusion)
@@ -481,7 +489,16 @@ CovEst_MI_BSd_3F <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, D
   
   serr_est_orig <- sqrt(diag(Cov_est_orig))
   
-  return(list(Cov_par_est = Cov_est_orig, St_err=serr_est_orig))
+  ## - Second Jacobian step to reconcile sigma_dg^2 to sigma_dg
+  nabla_grad <- matrix(0, 18, 18)
+  diag(nabla_grad[c(1:9, 13:18), c(1:9, 13:18)]) <- 1
+  diag(nabla_grad[c(10:12), c(10:12)]) <- 0.5 / sigma_dg
+  
+  Cov_est_orig2 <- t(nabla_grad) %*% Cov_est_orig %*% nabla_grad
+  
+  serr_est_orig2 <- sqrt(diag(Cov_est_orig2))
+  
+  return(list(Cov_par_est = Cov_est_orig2, St_err=list(delta=serr_est_orig2[1:6], kappa=serr_est_orig2[7:9], sigma_dg=serr_est_orig2[10:12], Sigma_cov=serr_est_orig2[13:15], r1=serr_est_orig2[16], r2=serr_est_orig2[17], rc=serr_est_orig2[18])))
   
 }
 
@@ -684,7 +701,7 @@ CovEst_MI_AFNSi <- function(x0, delta, kappa, sigma, r, mu_bar, D_se=50){
   
   serr_est_orig <- sqrt(diag(Cov_est_orig))
   
-  return(list(Cov_par_est = Cov_est_orig, St_err=serr_est_orig))
+  return(list(Cov_par_est = Cov_est_orig, St_err=list(delta=serr_est_orig[1], kappa=serr_est_orig[2:4], sigma=serr_est_orig[5:7], r1=serr_est_orig[8], r2=serr_est_orig[9], rc=serr_est_orig[10])))
   
 }
 
@@ -927,7 +944,7 @@ CovEst_MI_AFNSd <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, D_
   subjac <- jacobian(parest2cov_jac, c(pe_dg_l_Sigma_chol, pe_odg_Sigma_chol), method="Richardson", side=NULL)
   
   Jac <- matrix(0, 13, 13)
-  diag(Jac[1:4, 1:7]) <- rep(1, 4) # the untransformed delta
+  diag(Jac[1:4, 1:4]) <- rep(1, 4) # the untransformed delta
   Jac[5:10, 5:10] <- subjac
   diag(Jac[11:13, 11:13]) <- r
   
@@ -935,7 +952,16 @@ CovEst_MI_AFNSd <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, D_
   
   serr_est_orig <- sqrt(diag(Cov_est_orig))
   
-  return(list(Cov_par_est = Cov_est_orig, St_err=serr_est_orig))
+  ## - Second Jacobian step to reconcile sigma_dg^2 to sigma_dg
+  nabla_grad <- matrix(0, 13, 13)
+  diag(nabla_grad[c(1:4, 8:13), c(1:4, 8:13)]) <- 1
+  diag(nabla_grad[c(5:7), c(5:7)]) <- 0.5 / sigma_dg
+  
+  Cov_est_orig2 <- t(nabla_grad) %*% Cov_est_orig %*% nabla_grad
+  
+  serr_est_orig2 <- sqrt(diag(Cov_est_orig2))
+  
+  return(list(Cov_par_est = Cov_est_orig2, St_err=list(delta=serr_est_orig2[1], kappa=serr_est_orig2[2:4], sigma_dg=serr_est_orig2[5:7], Sigma_cov=serr_est_orig2[8:10], r1=serr_est_orig2[11], r2=serr_est_orig2[12], rc=serr_est_orig2[13])))
   
 }
 
@@ -1145,26 +1171,9 @@ CovEst_MI_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, 
   serr_est_orig <- sqrt(diag(Cov_est_orig))
   
   
-  return(list(Cov_par_est = Cov_est_orig, St_err=serr_est_orig))
+  return(list(Cov_par_est = Cov_est_orig, St_err=list(delta=serr_est_orig[1:n_factors], kappa=serr_est_orig[(n_factors+1):(n_factors*2)], sigma=serr_est_orig[(2*n_factors+1):(n_factors*3)], theta_Q=serr_est_orig[(3*n_factors+1):(n_factors*4)], sigma=serr_est_orig[(4*n_factors+1):(n_factors*5)], r1=serr_est_orig[(5*n_factors+1)], r2=serr_est_orig[(5*n_factors+2)], rc=serr_est_orig[(5*n_factors+3)])))
   
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
