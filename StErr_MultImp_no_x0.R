@@ -57,7 +57,7 @@ nLL_BSi_serr <- function(delta, kappa, l_sigma, l_r, mu_bar, X_rnd_nLL){
 
 nLL_BSi_serr_H <- function(vdParameters, mu_bar, X_rnd_H){
   n_factors <- nrow(X_rnd_H)
-
+  
   delta = vdParameters[1:n_factors]
   kappa = vdParameters[(n_factors+1):(n_factors*2)]
   l_sigma = vdParameters[(n_factors*2+1):(n_factors*3)]
@@ -229,7 +229,7 @@ parest2cov_jac <- function(dg_l_Sigma_chol_odg_Sigma_chol){
   
   Sigma_diffusion <- matrix(NA, n_factors, n_factors)
   Sigma_diffusion <- Low_Chol %*% t(Low_Chol)
-#  diag(Sigma_diffusion) <- sqrt(diag(Sigma_diffusion))
+  #  diag(Sigma_diffusion) <- sqrt(diag(Sigma_diffusion))
   
   Sigma_el <- rep(0, (length(dg_l_Sigma_chol_odg_Sigma_chol)))
   Sigma_el[1:n_factors] <- diag(Sigma_diffusion)
@@ -552,7 +552,7 @@ nLL_AFNSi_serr <- function(delta, kappa, l_sigma, l_r, mu_bar, X_rnd_nLL){
 }
 
 nLL_AFNSi_serr_H <- function(vdParameters, mu_bar, X_rnd_H){
-
+  
   n_factors <- 3
   
   delta = vdParameters[1]
@@ -625,7 +625,7 @@ co_asc_AFNSi_MI <- function(mu_bar, X_random, delta, kappa, sigma, r, max_iter=2
   repeat{
     neg_loglikelihood <- nLL_AFNSi_serr(delta_par, kappa_par, l_sigma_par, l_r_par, mu_bar, X_rnd_nLL = X_random)
     iter_count <- iter_count + 1
-
+    
     delta_opt_BSi_KD <- optim(delta_par, nLL_AFNSi_serr, kappa=kappa_par, l_sigma=l_sigma_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
     delta_par <- delta_opt_BSi_KD$par
     
@@ -1086,7 +1086,7 @@ co_asc_CIR_MI <- function(mu_bar, X_random, delta, kappa, sigma, theta_Q, theta_
     
     neg_loglikelihood <- nLL_CIR_serr(delta_par, l_kappa_par, l_sigma_par, l_theta_Q_par, l_theta_P_par, l_r_par, mu_bar, X_rnd_nLL = X_random)
     iter_count <- iter_count + 1
-
+    
     delta_opt_CIR_KD <- optim(delta_par, nLL_CIR_serr, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_theta_Q=l_theta_Q_par, l_theta_P=l_theta_P_par, l_r=l_r_par, mu_bar, X_rnd_nLL = X_random, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
     delta_par <- delta_opt_CIR_KD$par
     
@@ -1174,8 +1174,6 @@ CovEst_MI_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, 
   return(list(Cov_par_est = Cov_est_orig, St_err=list(delta=serr_est_orig[1:n_factors], kappa=serr_est_orig[(n_factors+1):(n_factors*2)], sigma=serr_est_orig[(2*n_factors+1):(n_factors*3)], theta_Q=serr_est_orig[(3*n_factors+1):(n_factors*4)], sigma=serr_est_orig[(4*n_factors+1):(n_factors*5)], r1=serr_est_orig[(5*n_factors+1)], r2=serr_est_orig[(5*n_factors+2)], rc=serr_est_orig[(5*n_factors+3)])))
   
 }
-
-
 
 
 
