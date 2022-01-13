@@ -6,6 +6,12 @@
 # - the optimization procedure
 ###############################################################################################
 
+library(mvtnorm)
+library(TruncatedNormal)
+library(numDeriv)
+library(MASS)
+
+
 # - Functions to get the standardized residuals
 
 #======================= - Blackburn-Sherris independent factor model - ===================
@@ -136,7 +142,7 @@ co_asc_BSi_BS_nx0 <- function(mu_bar, x0, delta, kappa, sigma, r, max_iter=200, 
   # - Initialize log-likelihood
   neg_loglikelihood <- 0
   
-  x0_par <- x0_s
+  x0_par <- x0
   delta_par <- delta
   kappa_par <- kappa
   l_sigma_par <- log(sigma)
@@ -181,6 +187,9 @@ co_asc_BSi_BS_nx0 <- function(mu_bar, x0, delta, kappa, sigma, r, max_iter=200, 
 CovEst_BS_BSi <- function(x0, delta, kappa, sigma, r, mu_bar, n_BS=500, t_ex = 4){
   par_table <- matrix(NA, n_BS, length(c(delta, kappa, sigma, r)))
   n_factors <- length(kappa)
+  n_ages <- nrow(mu_bar)
+  n_years <- ncol(mu_bar)
+  
   colnames(par_table_BSi) <- c(sprintf("delta_%d", c(1:n_factors)), sprintf("kappa_%d", c(1:n_factors)), sprintf("sigma_%d", c(1:n_factors)), c("r1", "r2", "rc"))
   
   res_table <- matrix(NA, n_ages, n_years)
@@ -395,7 +404,7 @@ co_asc_BSd_3F_BS_nx0 <- function(mu_bar, x0, delta, kappa, sigma_dg, Sigma_cov, 
   # - Initialize log-likelihood
   neg_loglikelihood <- 0
   
-  x0_par <- x0_s
+  x0_par <- x0
   delta_par <- delta
   kappa_par <- kappa
   dg_l_Sigma_chol_par <- cov2par(c(sigma_dg^2, Sigma_cov))$dg_l_Sigma_chol
@@ -437,6 +446,8 @@ co_asc_BSd_3F_BS_nx0 <- function(mu_bar, x0, delta, kappa, sigma_dg, Sigma_cov, 
 }
 
 CovEst_BS_BSd_3F <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, n_BS=500, t_ex = 4){
+  n_ages <- nrow(mu_bar)
+  n_years <- ncol(mu_bar)
   
   par_table <- matrix(NA, n_BS, length(c(delta, kappa, sigma_dg, Sigma_cov, r)))
   colnames(par_table_BSd) <- c("delta_11", 'delta_21', 'delta_22', 'delta_31', 'delta_32', 'delta_33', sprintf("kappa_%d", c(1:n_factors)), 'sigma_11', 'sigma_21', 'sigma_22', 'sigma_31', 'sigma_32', 'sigma_33', c("r1", "r2", "rc"))
@@ -623,7 +634,7 @@ co_asc_AFNSi_BS_nx0 <- function(mu_bar, x0, delta, kappa, sigma, r, max_iter=200
   # - Initialize log-likelihood
   neg_loglikelihood <- 0
   
-  x0_par <- x0_s
+  x0_par <- x0
   delta_par <- delta
   kappa_par <- kappa
   l_sigma_par <- log(sigma)
@@ -666,6 +677,8 @@ CovEst_BS_AFNSi <- function(x0, delta, kappa, sigma, r, mu_bar, n_BS=500, t_ex =
   par_table <- matrix(NA, n_BS, length(c(delta, kappa, sigma, r)))
   colnames(par_table_AFNSi) <- c("delta", sprintf("kappa_%s", c("L", 'S', 'C')), sprintf("sigma_%s", c("L", 'S', 'C')), c("r1", "r2", "rc"))
   n_factors <- 3
+  n_ages <- nrow(mu_bar)
+  n_years <- ncol(mu_bar)
   
   res_table <- matrix(NA, n_ages, n_years)
   
@@ -873,7 +886,7 @@ co_asc_AFNSd_BS_nx0 <- function(mu_bar, x0, delta, kappa, sigma_dg, Sigma_cov, r
   # - Initialize log-likelihood
   neg_loglikelihood <- 0
   
-  x0_par <- x0_s
+  x0_par <- x0
   delta_par <- delta
   kappa_par <- kappa
   dg_l_Sigma_chol_par <- cov2par(c(sigma_dg^2, Sigma_cov))$dg_l_Sigma_chol
@@ -917,6 +930,8 @@ co_asc_AFNSd_BS_nx0 <- function(mu_bar, x0, delta, kappa, sigma_dg, Sigma_cov, r
 
 
 CovEst_BS_AFNSd <- function(x0, delta, kappa, sigma_dg, Sigma_cov, r, mu_bar, n_BS=500, t_ex = 4){
+  n_ages <- nrow(mu_bar)
+  n_years <- ncol(mu_bar)
   
   par_table <- matrix(NA, n_BS, length(c(delta, kappa, sigma_dg, Sigma_cov, r)))
   colnames(par_table_AFNSd) <- c("delta", sprintf("kappa_%d", c(1:n_factors)), 'sigma_L', 'sigma_LS', 'sigma_S', 'sigma_LC', 'sigma_SC', 'sigma_C', c("r1", "r2", "rc"))
@@ -1099,7 +1114,7 @@ y_star_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, e_star){
   return(y_star)
 }
 
-co_asc_CIR_nx0 <- function(mu_bar, x0, delta, kappa, sigma, theta_Q, theta_P, r, max_iter=200, tol_lik=0.1){
+co_asc_CIR_BS_nx0 <- function(mu_bar, x0, delta, kappa, sigma, theta_Q, theta_P, r, max_iter=200, tol_lik=0.1){
   
   n_factors <- length(kappa)
   # - Matrix for parameter estimates storage
@@ -1110,7 +1125,7 @@ co_asc_CIR_nx0 <- function(mu_bar, x0, delta, kappa, sigma, theta_Q, theta_P, r,
   
   ## - Factor covariance matrix at t=0
   
-  l_x0_par <- log(x0_s)
+  l_x0_par <- log(x0)
   delta_par <- delta
   l_kappa_par <- log(kappa) # - take logs to ensure positivity
   l_sigma_par <- log(sigma)
@@ -1156,17 +1171,19 @@ co_asc_CIR_nx0 <- function(mu_bar, x0, delta, kappa, sigma, theta_Q, theta_P, r,
   return(list(par_est = list(x0=CA_par[iter_count,1:n_factors], delta=CA_par[iter_count,((n_factors + 1):(n_factors*2))], kappa=CA_par[iter_count,((n_factors*2 + 1):(n_factors*3))], sigma=CA_par[iter_count,((n_factors*3 + 1):(n_factors*4))], theta_Q=CA_par[iter_count,((n_factors*4 + 1):(n_factors*5))], theta_P=CA_par[iter_count,((n_factors*5 + 1):(n_factors*6))], r1=CA_par[iter_count,(n_factors*6 + 1)], r2=CA_par[iter_count,(n_factors*6 + 2)], rc=CA_par[iter_count,(n_factors*6 + 3)]), log_lik = CA_par[iter_count,length(c(x0, delta, kappa, sigma, theta_Q, theta_P, r))+1], CA_table = CA_par[1:iter_count,]))
 }
 
-CovEst_BS_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, n_BS=500, t_ex = 4){
+CovEst_BS_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, n_BS=500, t_ex = 4, path=NULL){
   par_table <- matrix(NA, n_BS, length(c(delta, kappa, sigma, theta_Q, theta_P, r)))
   n_factors <- length(kappa)
+  n_ages <- nrow(mu_bar)
+  n_years <- ncol(mu_bar)
   
-  colnames(par_table_CIR) <- c(sprintf("delta_%d", c(1:n_factors)), sprintf("kappa_%d", c(1:n_factors)), sprintf("sigma_%d", c(1:n_factors)), sprintf("theta_Q_%d", c(1:n_factors)), sprintf("theta_P_%d", c(1:n_factors)), c("r1", "r2", "rc"))
+  colnames(par_table) <- c(sprintf("delta_%d", c(1:n_factors)), sprintf("kappa_%d", c(1:n_factors)), sprintf("sigma_%d", c(1:n_factors)), sprintf("theta_Q_%d", c(1:n_factors)), sprintf("theta_P_%d", c(1:n_factors)), c("r1", "r2", "rc"))
   
   res_table <- matrix(NA, n_ages, n_years)
   
   # - 4) Parameter estimation
   ## - 4.1) Get filtered estimates
-  Filtering <- KF_CIR_uKD(x0, delta, kappa, sigma, theta_Q, theta_P, r)
+  Filtering <- KF_CIR_uKD(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar)
   X_t_fil <- Filtering$X_t
   X_t_c_fil <- Filtering$X_t_c
   S_t_fil <- Filtering$S_t
@@ -1178,7 +1195,7 @@ CovEst_BS_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, 
   S_t_sm <- Smoothing$S_t_sm[,1:n_factors]
   
   # - 1) Get standardized residuals
-  std_r <- std_res_CIR(x0, delta, kappa, sigma, theta_Q, theta_P, r)
+  std_r <- std_res_CIR(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar)
   ## - Fill the first t_ex residuals, which stay the same
   res_table[,1:t_ex] <- std_r[,1:t_ex]
   
@@ -1203,6 +1220,11 @@ CovEst_BS_CIR <- function(x0, delta, kappa, sigma, theta_Q, theta_P, r, mu_bar, 
     par_table[i,(n_factors*3+1):(n_factors*4)] <- par_est_BS_i$par_est$theta_Q
     par_table[i,(n_factors*4+1):(n_factors*5)] <- par_est_BS_i$par_est$theta_P
     par_table[i,(n_factors*5+1):(n_factors*6)] <- c(par_est_BS_i$par_est$r1, par_est_BS_i$par_est$r2, par_est_BS_i$par_est$rc)
+    
+    if(i %in% seq(10, n_BS, 10)){
+      save.image(path)
+    }
+    
   }
   
   # 5) Get st. err. parameter estimates (unconstrained parameters)
