@@ -80,20 +80,25 @@ co_asc_BSi <- function(mu_bar, x0=c(6.960591e-03, 9.017154e-03, 5.091784e-03), d
   iter_count <- 1
   repeat{
     
-    x0_opt_BSi_KD <- optim(x0_par, nLL_BSi_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    x0_opt_BSi_KD <- optim(x0_par, nLL_BSi_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     x0_par <- x0_opt_BSi_KD$par
+    print(paste(sprintf("X(0)_%d", c(1:n_factors)), round(x0_par,3)))
     
-    delta_opt_BSi_KD <- optim(delta_par, nLL_BSi_uKD_CA, mu_bar=mu_bar, x0=x0_par, kappa=kappa_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    delta_opt_BSi_KD <- optim(delta_par, nLL_BSi_uKD_CA, mu_bar=mu_bar, x0=x0_par, kappa=kappa_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     delta_par <- delta_opt_BSi_KD$par
+    print(paste(sprintf("delta_%d", c(1:n_factors)), round(delta_par,3)))
     
-    kappa_opt_BSi_KD <- optim(kappa_par, nLL_BSi_uKD_CA, mu_bar=mu_bar, x0=x0_par, delta=delta_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    kappa_opt_BSi_KD <- optim(kappa_par, nLL_BSi_uKD_CA, mu_bar=mu_bar, x0=x0_par, delta=delta_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     kappa_par <- kappa_opt_BSi_KD$par
+    print(paste(sprintf("kappa_%d", c(1:n_factors)), round(kappa_par,3)))
     
-    l_sigma_opt_BSi_KD <- optim(l_sigma_par, nLL_BSi_uKD_CA, mu_bar=mu_bar, x0=x0_par, delta=delta_par, kappa=kappa_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    l_sigma_opt_BSi_KD <- optim(l_sigma_par, nLL_BSi_uKD_CA, mu_bar=mu_bar, x0=x0_par, delta=delta_par, kappa=kappa_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     l_sigma_par <- l_sigma_opt_BSi_KD$par
+    print(paste(sprintf("sigma_%d", c(1:n_factors)), round(exp(l_sigma_par),3)))
     
-    l_r_opt_BSi_KD <- optim(l_r_par, nLL_BSi_uKD_CA, mu_bar=mu_bar, x0=x0_par, delta=delta_par, kappa=kappa_par, l_sigma=l_sigma_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    l_r_opt_BSi_KD <- optim(l_r_par, nLL_BSi_uKD_CA, mu_bar=mu_bar, x0=x0_par, delta=delta_par, kappa=kappa_par, l_sigma=l_sigma_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     l_r_par <- l_r_opt_BSi_KD$par
+    print(paste(c("r1", "r2", "rc"), round(exp(l_r_par),3)))
     
     # - Store par_est
     CA_par[iter_count,1:length(c(x0_par, delta_par, kappa_par, l_sigma_par, l_r_par))] <- c(x0_par, delta_par, kappa_par, exp(l_sigma_par), exp(l_r_par))
@@ -104,13 +109,17 @@ co_asc_BSi <- function(mu_bar, x0=c(6.960591e-03, 9.017154e-03, 5.091784e-03), d
     }else{
       # - Update log-likelihood
       neg_loglikelihood <- nLL_BSi_uKD_CA(x0_par, delta_par, kappa_par, l_sigma_par, l_r_par, mu_bar)
+      
+      print(paste("log_lik", round(CA_par[iter_count, length(c(x0, delta, kappa, sigma, r))+1],2)))
+      print(paste(iter_count, "% iteration"))
+      print(paste("---------------------------------"))
+      
       iter_count <- iter_count + 1
     }
   }
   
   return(list(par_est = list(x0=CA_par[iter_count,1:n_factors], delta=CA_par[iter_count,((n_factors + 1):(n_factors*2))], kappa=CA_par[iter_count,((n_factors*2 + 1):(n_factors*3))], sigma=CA_par[iter_count,((n_factors*3 + 1):(n_factors*4))], r1=CA_par[iter_count,(n_factors*4 + 1)], r2=CA_par[iter_count,(n_factors*4 + 2)], rc=CA_par[iter_count,(n_factors*4 + 3)]), log_lik = CA_par[iter_count,length(c(x0, delta, kappa, sigma, r))+1], CA_table = CA_par[1:iter_count,]))
 }
-
 
 
 #================== - BS dependent Coordinate ascent algorithm - =========================
@@ -261,6 +270,70 @@ nLL_BSd_3F_uKD_CA <- function(x0, delta, kappa, dg_l_Sigma_chol, odg_Sigma_chol,
 
 
 # - 2-factors
+co_asc_BSd_2F <- function(mu_bar, x0=c(2.191140e-03, -8.855686e-03), delta=c(-5.175933e-02, 4.578315e-01, -5.175921e-02), kappa=c(3.455255e-02, 1.075876e-02), sigma_dg=c(6.789215e-04, 2.036748e-03), Sigma_cov=0, r=exp(c(-3.345631e+01, -6.015438e-01, -1.557244e+01)), max_iter=200, tol_lik=0.1){
+  
+  # - Matrix for parameter estimates storage
+  n_factors <- 2
+  CA_par <- matrix(NA, nrow=max_iter, ncol=length(c(x0, delta, kappa, sigma_dg, Sigma_cov, r))+1)
+  colnames(CA_par) <- c(sprintf("x0_%d", c(1:n_factors)), "delta_11", 'delta_21', 'delta_22', sprintf("kappa_%d", c(1:n_factors)), 'sigma_11', 'sigma_21', 'sigma_22', c("r1", "r2", "rc"), "log_lik")
+  
+  # - Initialize log-likelihood
+  neg_loglikelihood <- 0
+  
+  x0_par <- x0
+  delta_par <- delta
+  kappa_par <- kappa
+  dg_l_Sigma_chol_par <- cov2par(c(sigma_dg^2, Sigma_cov))$dg_l_Sigma_chol
+  odg_Sigma_chol_par <- cov2par(c(sigma_dg^2, Sigma_cov))$odg_Sigma_chol
+  l_r_par <- log(r)
+  
+  iter_count <- 1
+  repeat{
+    
+    x0_opt_BSd_KD <- optim(x0_par, nLL_BSd_2F_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
+    x0_par <- x0_opt_BSd_KD$par
+    print(paste(sprintf("X(0)_%d", c(1:n_factors)), round(x0_par,3)))
+    
+    delta_opt_BSd_KD <- optim(delta_par, nLL_BSd_2F_uKD_CA, mu_bar=mu_bar, x0=x0_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
+    delta_par <- delta_opt_BSd_KD$par
+    print(paste(c("delta_11", 'delta_21', 'delta_22'), round(delta_par,3)))
+    
+    kappa_opt_BSd_KD <- optim(kappa_par, nLL_BSd_2F_uKD_CA, mu_bar=mu_bar, delta=delta_par, x0=x0_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
+    kappa_par <- kappa_opt_BSd_KD$par
+    print(paste(sprintf("kappa_%d", c(1:n_factors)), round(kappa_par,3)))
+    
+    dg_l_Sigma_chol_opt_BSd_KD <- optim(dg_l_Sigma_chol_par, nLL_BSd_2F_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, x0=x0_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
+    dg_l_Sigma_chol_par <- dg_l_Sigma_chol_opt_BSd_KD$par
+    
+    odg_Sigma_chol_opt_BSd_KD <- optim(odg_Sigma_chol_par, nLL_BSd_2F_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, x0=x0_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
+    odg_Sigma_chol_par <- odg_Sigma_chol_opt_BSd_KD$par
+    print(paste(c('sigma_11', 'sigma_21', 'sigma_22'), round(parest2cov(dg_l_Sigma_chol_par, odg_Sigma_chol_par),3)))
+    
+    l_r_opt_BSd_KD <- optim(l_r_par, nLL_BSd_2F_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, x0=x0_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
+    l_r_par <- l_r_opt_BSd_KD$par
+    print(paste(c("r1", "r2", "rc"), round(exp(l_r_par),3)))
+    
+    # - Store par_est
+    CA_par[iter_count,1:length(c(x0, delta, kappa, sigma_dg, Sigma_cov, r))] <- c(x0_par, delta_par, kappa_par, parest2cov(dg_l_Sigma_chol_par, odg_Sigma_chol_par), exp(l_r_par))
+    CA_par[iter_count,length(c(x0, delta, kappa, sigma_dg, Sigma_cov, r))+1] <- -0.5 * nLL_BSd_2F_uKD_CA(x0_par, delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par, mu_bar) - 0.5 * nrow(mu_bar) * ncol(mu_bar)
+    
+    if (abs(nLL_BSd_2F_uKD_CA(x0_par, delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par, mu_bar) - neg_loglikelihood) < tol_lik  | (iter_count==max_iter) ){
+      break
+    }else{
+      # - Update log-likelihood
+      neg_loglikelihood <- nLL_BSd_2F_uKD_CA(x0_par, delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par, mu_bar)
+      
+      print(paste("log_lik", round(CA_par[iter_count, length(c(x0, delta, kappa, sigma, r))+1],2)))
+      print(paste(iter_count, "% iteration"))
+      print(paste("---------------------------------"))
+
+      iter_count <- iter_count + 1
+    }
+  }
+  
+  return(list(par_est = list(x0=CA_par[iter_count,c(1:2)], delta=CA_par[iter_count,3:5], kappa=CA_par[iter_count,c(6:7)], Sigma=list(sigma_11 = CA_par[iter_count,8], sigma_21 = CA_par[iter_count,9], sigma_22 = CA_par[iter_count,10]), r1=CA_par[iter_count,11], r2=CA_par[iter_count,12], rc=CA_par[iter_count,13]), log_lik = CA_par[iter_count,length(c(x0, delta, kappa, sigma_dg, Sigma_cov, r))+1], CA_table = CA_par[1:iter_count,]))
+}
+
 # - Directly provide the parameters
 
 co_asc_BSd_3F <- function(mu_bar, x0=c(2.191140e-03, -8.855686e-03, 2.711990e-02), delta=c(-5.175933e-02, 4.578315e-01, -5.175921e-02, -2.299199e-01, 1.383445e-02, -6.310253e-02), kappa=c(3.455255e-02, 1.075876e-02, 1.000030e-02), sigma_dg=c(6.789215e-04, 2.036748e-03, 1.875928e-03), Sigma_cov=c(-1.260778e-06, 1.194974e-06, -3.718267e-06), r=exp(c(-3.345631e+01, -6.015438e-01, -1.557244e+01)), max_iter=200, tol_lik=0.1){
@@ -283,23 +356,28 @@ co_asc_BSd_3F <- function(mu_bar, x0=c(2.191140e-03, -8.855686e-03, 2.711990e-02
   iter_count <- 1
   repeat{
     
-    x0_opt_BSd_3F_KD <- optim(x0_par, nLL_BSd_3F_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    x0_opt_BSd_3F_KD <- optim(x0_par, nLL_BSd_3F_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     x0_par <- x0_opt_BSd_3F_KD$par
+    print(paste(sprintf("X(0)_%d", c(1:n_factors)), round(x0_par,3)))
     
-    delta_opt_BSd_3F_KD <- optim(delta_par, nLL_BSd_3F_uKD_CA, mu_bar=mu_bar, x0=x0_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    delta_opt_BSd_3F_KD <- optim(delta_par, nLL_BSd_3F_uKD_CA, mu_bar=mu_bar, x0=x0_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     delta_par <- delta_opt_BSd_3F_KD$par
+    print(paste(c("delta_11", 'delta_21', 'delta_22', 'delta_31', 'delta_32', 'delta_33'), round(delta_par,3)))
     
-    kappa_opt_BSd_3F_KD <- optim(kappa_par, nLL_BSd_3F_uKD_CA, mu_bar=mu_bar, delta=delta_par, x0=x0_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    kappa_opt_BSd_3F_KD <- optim(kappa_par, nLL_BSd_3F_uKD_CA, mu_bar=mu_bar, delta=delta_par, x0=x0_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     kappa_par <- kappa_opt_BSd_3F_KD$par
+    print(paste(sprintf("kappa_%d", c(1:n_factors)), round(kappa_par,3)))
     
-    dg_l_Sigma_chol_opt_BSd_3F_KD <- optim(dg_l_Sigma_chol_par, nLL_BSd_3F_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, x0=x0_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    dg_l_Sigma_chol_opt_BSd_3F_KD <- optim(dg_l_Sigma_chol_par, nLL_BSd_3F_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, x0=x0_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     dg_l_Sigma_chol_par <- dg_l_Sigma_chol_opt_BSd_3F_KD$par
     
-    odg_Sigma_chol_opt_BSd_3F_KD <- optim(odg_Sigma_chol_par, nLL_BSd_3F_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, x0=x0_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    odg_Sigma_chol_opt_BSd_3F_KD <- optim(odg_Sigma_chol_par, nLL_BSd_3F_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, x0=x0_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     odg_Sigma_chol_par <- odg_Sigma_chol_opt_BSd_3F_KD$par
+    print(paste(c('sigma_11', 'sigma_21', 'sigma_22', 'sigma_31', 'sigma_32', 'sigma_33'), round(parest2cov(dg_l_Sigma_chol_par, odg_Sigma_chol_par),3)))
     
-    l_r_opt_BSd_3F_KD <- optim(l_r_par, nLL_BSd_3F_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, x0=x0_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    l_r_opt_BSd_3F_KD <- optim(l_r_par, nLL_BSd_3F_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, x0=x0_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     l_r_par <- l_r_opt_BSd_3F_KD$par
+    print(paste(c("r1", "r2", "rc"), round(exp(l_r_par),3)))
     
     # - Store par_est
     CA_par[iter_count,1:length(c(x0, delta, kappa, sigma_dg, Sigma_cov, r))] <- c(x0_par, delta_par, kappa_par, parest2cov(dg_l_Sigma_chol_par, odg_Sigma_chol_par), exp(l_r_par))
@@ -310,12 +388,18 @@ co_asc_BSd_3F <- function(mu_bar, x0=c(2.191140e-03, -8.855686e-03, 2.711990e-02
     }else{
       # - Update log-likelihood
       neg_loglikelihood <- nLL_BSd_3F_uKD_CA(x0_par, delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par, mu_bar)
+      
+      print(paste("log_lik", round(CA_par[iter_count, length(c(x0, delta, kappa, sigma, r))+1],2)))
+      print(paste(iter_count, "% iteration"))
+      print(paste("---------------------------------"))
+      
       iter_count <- iter_count + 1
     }
   }
   
   return(list(par_est = list(x0=CA_par[iter_count,c(1:3)], delta=CA_par[iter_count,4:9], kappa=CA_par[iter_count,c(10:12)], Sigma=list(sigma_11 = CA_par[iter_count,13], sigma_21 = CA_par[iter_count,14], sigma_22 = CA_par[iter_count,15], sigma_31 = CA_par[iter_count,16], sigma_32 = CA_par[iter_count,17], sigma_33 = CA_par[iter_count,18]), r1=CA_par[iter_count,19], r2=CA_par[iter_count,20], rc=CA_par[iter_count,21]), log_lik = CA_par[iter_count,length(c(x0, delta, kappa, sigma_dg, Sigma_cov, r))+1], CA_table = CA_par[1:iter_count,]))
 }
+
 
 #================================== - AFNS independent Coordinate ascent algorithm -=====================================
 
@@ -396,20 +480,25 @@ co_asc_AFNSi <- function(mu_bar, x0=c(1.091714e-02, 1.002960e-02, -5.990785e-04)
 
   repeat{
     
-    x0_opt_AFNSi_KD <- optim(x0_par, nLL_AFNSi_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    x0_opt_AFNSi_KD <- optim(x0_par, nLL_AFNSi_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     x0_par <- x0_opt_AFNSi_KD$par
+    print(paste(c('x0_L', 'x0_S', 'x0_C'), round(x0_par,3)))
     
-    delta_opt_AFNSi_KD <- optim(delta_par, nLL_AFNSi_uKD_CA, mu_bar=mu_bar, x0=x0_par, kappa=kappa_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    delta_opt_AFNSi_KD <- optim(delta_par, nLL_AFNSi_uKD_CA, mu_bar=mu_bar, x0=x0_par, kappa=kappa_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     delta_par <- delta_opt_AFNSi_KD$par
+    print(paste("delta", round(delta_par,3)))
     
-    kappa_opt_AFNSi_KD <- optim(kappa_par, nLL_AFNSi_uKD_CA, mu_bar=mu_bar, delta=delta_par, x0=x0_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    kappa_opt_AFNSi_KD <- optim(kappa_par, nLL_AFNSi_uKD_CA, mu_bar=mu_bar, delta=delta_par, x0=x0_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     kappa_par <- kappa_opt_AFNSi_KD$par
+    print(paste(c('kappa_L', 'kappa_S', 'kappa_C'), round(kappa_par,3)))
     
-    l_sigma_opt_AFNSi_KD <- optim(l_sigma_par, nLL_AFNSi_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, x0=x0_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    l_sigma_opt_AFNSi_KD <- optim(l_sigma_par, nLL_AFNSi_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, x0=x0_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     l_sigma_par <- l_sigma_opt_AFNSi_KD$par
+    print(paste(c('sigma_L', 'sigma_S', 'sigma_C'), round(exp(l_sigma_par),3)))
     
-    l_r_opt_AFNSi_KD <- optim(l_r_par, nLL_AFNSi_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, l_sigma=l_sigma_par, x0=x0_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    l_r_opt_AFNSi_KD <- optim(l_r_par, nLL_AFNSi_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, l_sigma=l_sigma_par, x0=x0_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     l_r_par <- l_r_opt_AFNSi_KD$par
+    print(paste(c("r1", "r2", "rc"), round(exp(l_r_par),3)))
     
     # - Store par_est
     CA_par[iter_count,1:length(c(x0_par, delta_par, kappa_par, l_sigma_par, l_r_par))] <- c(x0_par, delta_par, kappa_par, exp(l_sigma_par), exp(l_r_par))
@@ -420,6 +509,11 @@ co_asc_AFNSi <- function(mu_bar, x0=c(1.091714e-02, 1.002960e-02, -5.990785e-04)
     }else{
       # - Update log-likelihood
       neg_loglikelihood <- nLL_AFNSi_uKD_CA(x0_par, delta_par, kappa_par, l_sigma_par, l_r_par, mu_bar)
+      
+      print(paste("log_lik", round(CA_par[iter_count, length(c(x0, delta, kappa, sigma, r))+1],2)))
+      print(paste(iter_count, "% iteration"))
+      print(paste("---------------------------------"))
+      
       iter_count <- iter_count + 1
     }
   }
@@ -520,34 +614,43 @@ co_asc_AFNSd <- function(mu_bar, x0=c(9.582516e-03, 1.094110e-02, -1.503155e-03)
   iter_count <- 1
   repeat{
     
-    x0_opt_AFNSd_KD <- optim(x0_par, nLL_AFNSd_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    x0_opt_AFNSd_KD <- optim(x0_par, nLL_AFNSd_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     x0_par <- x0_opt_AFNSd_KD$par
+    print(paste(c('x0_L', 'x0_S', 'x0_C'), round(x0_par,3)))
     
-    delta_opt_AFNSd_KD <- optim(delta_par, nLL_AFNSd_uKD_CA, mu_bar=mu_bar, x0=x0_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "BFGS", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    delta_opt_AFNSd_KD <- optim(delta_par, nLL_AFNSd_uKD_CA, mu_bar=mu_bar, x0=x0_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "BFGS", hessian = TRUE, control=list(maxit = 10000))  
     delta_par <- delta_opt_AFNSd_KD$par
+    print(paste("delta", round(delta_par,3)))
     
-    kappa_opt_AFNSd_KD <- optim(kappa_par, nLL_AFNSd_uKD_CA, mu_bar=mu_bar, delta=delta_par, x0=x0_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    kappa_opt_AFNSd_KD <- optim(kappa_par, nLL_AFNSd_uKD_CA, mu_bar=mu_bar, delta=delta_par, x0=x0_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     kappa_par <- kappa_opt_AFNSd_KD$par
+    print(paste(c('kappa_L', 'kappa_S', 'kappa_C'), round(kappa_par,3)))
     
-    dg_l_Sigma_chol_opt_AFNSd_KD <- optim(dg_l_Sigma_chol_par, nLL_AFNSd_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, x0=x0_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    dg_l_Sigma_chol_opt_AFNSd_KD <- optim(dg_l_Sigma_chol_par, nLL_AFNSd_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, x0=x0_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     dg_l_Sigma_chol_par <- dg_l_Sigma_chol_opt_AFNSd_KD$par
     
-    odg_Sigma_chol_opt_AFNSd_KD <- optim(odg_Sigma_chol_par, nLL_AFNSd_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, x0=x0_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    odg_Sigma_chol_opt_AFNSd_KD <- optim(odg_Sigma_chol_par, nLL_AFNSd_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, x0=x0_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     odg_Sigma_chol_par <- odg_Sigma_chol_opt_AFNSd_KD$par
+    print(paste(c('sigma_L', 'sigma_LS', 'sigma_S', 'sigma_LC', 'sigma_SC', 'sigma_C'), round(parest2cov(dg_l_Sigma_chol_par, odg_Sigma_chol_par),3)))
     
-    l_r_opt_AFNSd_KD <- optim(l_r_par, nLL_AFNSd_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, x0=x0_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    l_r_opt_AFNSd_KD <- optim(l_r_par, nLL_AFNSd_uKD_CA, mu_bar=mu_bar, delta=delta_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, x0=x0_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     l_r_par <- l_r_opt_AFNSd_KD$par
+    print(paste(c("r1", "r2", "rc"), round(exp(l_r_par),3)))
     
     # - Store par_est
     CA_par[iter_count,1:length(c(x0, delta, kappa, sigma_dg, Sigma_cov, r))] <- c(x0_par, delta_par, kappa_par, parest2cov(dg_l_Sigma_chol_par, odg_Sigma_chol_par), exp(l_r_par))
     CA_par[iter_count,length(c(x0, delta, kappa, sigma_dg, Sigma_cov, r))+1] <- - 0.5 * nLL_AFNSd_uKD_CA(x0_par, delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par, mu_bar) - 0.5 * nrow(mu_bar) * ncol(mu_bar)
-    
     
     if(abs(nLL_AFNSd_uKD_CA(x0_par, delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par, mu_bar) - neg_loglikelihood) < tol_lik | (iter_count==max_iter) ){
       break
     }else{
       # - Update log-likelihood
       neg_loglikelihood <- nLL_AFNSd_uKD_CA(x0_par, delta_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par, mu_bar)
+      
+      print(paste("log_lik", round(CA_par[iter_count, length(c(x0, delta, kappa, sigma, r))+1],2)))
+      print(paste(iter_count, "% iteration"))
+      print(paste("---------------------------------"))
+      
       iter_count <- iter_count + 1
     }
   }
@@ -635,23 +738,28 @@ co_asc_AFGNSi <- function(mu_bar, x0=c(1.091714e-02, 1.002960e-02, 5.990785e-04,
   
   repeat{
     
-    x0_opt_AFGNSi_KD <- optim(x0_par, nLL_AFGNSi_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, kappa=kappa_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    x0_opt_AFGNSi_KD <- optim(x0_par, nLL_AFGNSi_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, kappa=kappa_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     x0_par <- x0_opt_AFGNSi_KD$par
+    print(paste(c('x0_L', 'x0_S1', 'x0_S2', 'x0_C1', 'x0_C2'), round(x0_par,3)))
     
-    delta1_opt_AFGNSi_KD <- optim(delta1_par, nLL_AFGNSi_uKD_CA, mu_bar=mu_bar, x0=x0_par, delta2=delta2_par, kappa=kappa_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    delta1_opt_AFGNSi_KD <- optim(delta1_par, nLL_AFGNSi_uKD_CA, mu_bar=mu_bar, x0=x0_par, delta2=delta2_par, kappa=kappa_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     delta1_par <- delta1_opt_AFGNSi_KD$par
     
-    delta2_opt_AFGNSi_KD <- optim(delta2_par, nLL_AFGNSi_uKD_CA, mu_bar=mu_bar, x0=x0_par, delta1=delta1_par, kappa=kappa_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    delta2_opt_AFGNSi_KD <- optim(delta2_par, nLL_AFGNSi_uKD_CA, mu_bar=mu_bar, x0=x0_par, delta1=delta1_par, kappa=kappa_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     delta2_par <- delta2_opt_AFGNSi_KD$par
+    print(paste(c("delta1", 'delta2'), round(c(delta1_par, delta2_par),3)))
     
-    kappa_opt_AFGNSi_KD <- optim(kappa_par, nLL_AFGNSi_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, x0=x0_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    kappa_opt_AFGNSi_KD <- optim(kappa_par, nLL_AFGNSi_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, x0=x0_par, l_sigma=l_sigma_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     kappa_par <- kappa_opt_AFGNSi_KD$par
+    print(paste(c('kappa_L', 'kappa_S1', "kappa_S2", 'kappa_C1', 'kappa_C2'), round(kappa_par,3)))
     
-    l_sigma_opt_AFGNSi_KD <- optim(l_sigma_par, nLL_AFGNSi_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, kappa=kappa_par, x0=x0_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    l_sigma_opt_AFGNSi_KD <- optim(l_sigma_par, nLL_AFGNSi_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, kappa=kappa_par, x0=x0_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     l_sigma_par <- l_sigma_opt_AFGNSi_KD$par
+    print(paste(c('sigma_L', 'sigma_S1', 'sigma_S2', 'sigma_C1', 'sigma_C2'), round(exp(l_sigma_par),3)))
     
-    l_r_opt_AFGNSi_KD <- optim(l_r_par, nLL_AFGNSi_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, kappa=kappa_par, l_sigma=l_sigma_par, x0=x0_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    l_r_opt_AFGNSi_KD <- optim(l_r_par, nLL_AFGNSi_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, kappa=kappa_par, l_sigma=l_sigma_par, x0=x0_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     l_r_par <- l_r_opt_AFGNSi_KD$par
+    print(paste(c("r1", "r2", "rc"), round(exp(l_r_par),3)))
     
     # - Store par_est
     CA_par[iter_count,1:length(c(x0_par, delta1_par, delta2_par, kappa_par, l_sigma_par, l_r_par))] <- c(x0_par, delta1_par, delta2_par, kappa_par, exp(l_sigma_par), exp(l_r_par))
@@ -662,6 +770,11 @@ co_asc_AFGNSi <- function(mu_bar, x0=c(1.091714e-02, 1.002960e-02, 5.990785e-04,
     }else{
       # - Update log-likelihood
       neg_loglikelihood <- nLL_AFGNSi_uKD_CA(x0_par, delta1_par, delta2_par, kappa_par, l_sigma_par, l_r_par, mu_bar)
+      
+      print(paste("log_lik", round(CA_par[iter_count, length(c(x0, delta, kappa, sigma, r))+1],2)))
+      print(paste(iter_count, "% iteration"))
+      print(paste("---------------------------------"))
+      
       iter_count <- iter_count + 1
     }
   }
@@ -762,26 +875,31 @@ co_asc_AFGNSd <- function(mu_bar, x0=c(1.091714e-02, 1.002960e-02, 5.990785e-04,
   iter_count <- 1
   repeat{
     
-    x0_opt_AFGNSd_KD <- optim(x0_par, nLL_AFGNSd_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    x0_opt_AFGNSd_KD <- optim(x0_par, nLL_AFGNSd_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     x0_par <- x0_opt_AFGNSd_KD$par
+    print(paste(c('x0_L', 'x0_S1', 'x0_S2', 'x0_C1', 'x0_C2'), round(x0_par,3)))
     
-    delta1_opt_AFGNSd_KD <- optim(delta1_par, nLL_AFGNSd_uKD_CA, mu_bar=mu_bar, x0=x0_par, delta2=delta2_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "BFGS", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    delta1_opt_AFGNSd_KD <- optim(delta1_par, nLL_AFGNSd_uKD_CA, mu_bar=mu_bar, x0=x0_par, delta2=delta2_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "BFGS", hessian = TRUE, control=list(maxit = 10000))  
     delta1_par <- delta1_opt_AFGNSd_KD$par
 
-    delta2_opt_AFGNSd_KD <- optim(delta2_par, nLL_AFGNSd_uKD_CA, mu_bar=mu_bar, x0=x0_par, delta1=delta1_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "BFGS", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    delta2_opt_AFGNSd_KD <- optim(delta2_par, nLL_AFGNSd_uKD_CA, mu_bar=mu_bar, x0=x0_par, delta1=delta1_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "BFGS", hessian = TRUE, control=list(maxit = 10000))  
     delta2_par <- delta2_opt_AFGNSd_KD$par
+    print(paste(c("delta1", 'delta2'), round(c(delta1_par, delta2_par),3)))
     
-    kappa_opt_AFGNSd_KD <- optim(kappa_par, nLL_AFGNSd_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, x0=x0_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    kappa_opt_AFGNSd_KD <- optim(kappa_par, nLL_AFGNSd_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, x0=x0_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     kappa_par <- kappa_opt_AFGNSd_KD$par
+    print(paste(c('kappa_L', 'kappa_S1', "kappa_S2", 'kappa_C1', 'kappa_C2'), round(kappa_par,3)))
     
-    dg_l_Sigma_chol_opt_AFGNSd_KD <- optim(dg_l_Sigma_chol_par, nLL_AFGNSd_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, kappa=kappa_par, x0=x0_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    dg_l_Sigma_chol_opt_AFGNSd_KD <- optim(dg_l_Sigma_chol_par, nLL_AFGNSd_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, kappa=kappa_par, x0=x0_par, odg_Sigma_chol=odg_Sigma_chol_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     dg_l_Sigma_chol_par <- dg_l_Sigma_chol_opt_AFGNSd_KD$par
     
-    odg_Sigma_chol_opt_AFGNSd_KD <- optim(odg_Sigma_chol_par, nLL_AFGNSd_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, x0=x0_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    odg_Sigma_chol_opt_AFGNSd_KD <- optim(odg_Sigma_chol_par, nLL_AFGNSd_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, x0=x0_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     odg_Sigma_chol_par <- odg_Sigma_chol_opt_AFGNSd_KD$par
+    print(paste(c('sigma_L', 'sigma_LS1', 'sigma_S1', 'sigma_LS2', 'sigma_S1S2', 'sigma_S2', 'sigma_LC1', 'sigma_S1C1', 'sigma_S2C1', 'sigma_C1', 'sigma_LC2', 'sigma_S1C2', 'sigma_S2C2', 'sigma_C1C2', 'sigma_C2'), round(parest2cov(dg_l_Sigma_chol_par, odg_Sigma_chol_par),3)))
     
-    l_r_opt_AFGNSd_KD <- optim(l_r_par, nLL_AFGNSd_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, x0=x0_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(trace=TRUE, maxit = 10000))  
+    l_r_opt_AFGNSd_KD <- optim(l_r_par, nLL_AFGNSd_uKD_CA, mu_bar=mu_bar, delta1=delta1_par, delta2=delta2_par, kappa=kappa_par, dg_l_Sigma_chol=dg_l_Sigma_chol_par, odg_Sigma_chol=odg_Sigma_chol_par, x0=x0_par, gr = NULL, method = "Nelder-Mead", hessian = TRUE, control=list(maxit = 10000))  
     l_r_par <- l_r_opt_AFGNSd_KD$par
+    print(paste(c("r1", "r2", "rc"), round(exp(l_r_par),3)))
     
     # - Store par_est
     CA_par[iter_count,1:length(c(x0, delta1, delta2, kappa, sigma_dg, Sigma_cov, r))] <- c(x0_par, delta1_par, delta2_par, kappa_par, parest2cov(dg_l_Sigma_chol_par, odg_Sigma_chol_par), exp(l_r_par))
@@ -793,6 +911,11 @@ co_asc_AFGNSd <- function(mu_bar, x0=c(1.091714e-02, 1.002960e-02, 5.990785e-04,
     }else{
       # - Update log-likelihood
       neg_loglikelihood <- nLL_AFGNSd_uKD_CA(x0_par, delta1_par, delta2_par, kappa_par, dg_l_Sigma_chol_par, odg_Sigma_chol_par, l_r_par, mu_bar)
+      
+      print(paste("log_lik", round(CA_par[iter_count, length(c(x0, delta, kappa, sigma, r))+1],2)))
+      print(paste(iter_count, "% iteration"))
+      print(paste("---------------------------------"))
+      
       iter_count <- iter_count + 1
     }
   }
@@ -803,7 +926,7 @@ co_asc_AFGNSd <- function(mu_bar, x0=c(1.091714e-02, 1.002960e-02, 5.990785e-04,
 
 #======================= - CIR Coordinate ascent algorithm with bounded X - =====================
 
-nLL_CIR_uKD_CA_bd <- function(l_x0, delta, l_kappa, l_sigma, l_theta_Q, l_theta_P, l_r, mu_bar){
+nLL_CIR_uKD_CA_bd <- function(l_x0, delta, l_kappa, l_sigma, l_theta_P, l_r, mu_bar){
   
   r_1 <- l_r[1]
   r_2 <- l_r[2]
@@ -827,7 +950,7 @@ nLL_CIR_uKD_CA_bd <- function(l_x0, delta, l_kappa, l_sigma, l_theta_Q, l_theta_
   P_ti <- 1e-10 * diag(1, n_factors)
   
   for(age in 1:n_ages){    # - scroll over the ages
-    A_tT[age,1] <- A_CIR(age, exp(l_theta_Q), exp(l_sigma), delta)  
+    A_tT[age,1] <- A_CIR(age, (exp(l_theta_P + l_kappa) / delta), exp(l_sigma), delta)  
     B_tT[age,] <- B_CIR(age, exp(l_sigma), delta)  
   }
   
@@ -863,13 +986,12 @@ nLL_CIR_uKD_CA_bd <- function(l_x0, delta, l_kappa, l_sigma, l_theta_Q, l_theta_
   return(log_lik)
 }
 
-
-co_asc_CIR <- function(mu_bar, x0=c(1.611524e-03, 5.763081e-03, 1.208483e-02), delta=c(-0.12379389, -0.06208546, -0.08131285), kappa=c(1.665062e-16, 3.477558e-01, 4.619791e-02), sigma=c(4.143351e-03, 6.242207e-02, 1.797287e-02), theta_Q = c(9.322613e-10, 8.457568e-03, 4.661882e-10), theta_P=c(0.01, 3.792994e-03, 6.272185e-03), r=c(2.952881e-15, 5.445661e-01, 1.493218e-07), max_iter=200, tol_lik=0.1){
+co_asc_CIR <- function(mu_bar, x0=c(1.611524e-03, 5.763081e-03, 1.208483e-02), delta=c(-0.12379389, -0.06208546, -0.08131285), kappa=c(4.619791e-02, 3.477558e-01, 4.619791e-02), sigma=c(4.143351e-03, 6.242207e-02, 1.797287e-02), theta_P = c(9.322613e-03, 8.457568e-03, 4.661882e-03), r=c(2.952881e-15, 5.445661e-01, 1.493218e-07), max_iter=200, tol_lik=0.1){
   
   n_factors <- length(kappa)
   # - Matrix for parameter estimates storage
-  CA_par <- matrix(NA, nrow=max_iter, ncol=length(c(x0, delta, kappa, sigma, theta_Q, theta_P, r))+1)
-  colnames(CA_par) <- c(sprintf("x0_%d", c(1:n_factors)), sprintf("delta_%d", c(1:n_factors)), sprintf("kappa_%d", c(1:n_factors)), sprintf("sigma_%d", c(1:n_factors)), sprintf("theta_Q_%d", c(1:n_factors)), sprintf("theta_P_%d", c(1:n_factors)),  c("r1", "r2", "rc"), "log_lik")
+  CA_par <- matrix(NA, nrow=max_iter, ncol=length(c(x0, delta, kappa, sigma, theta_P, r))+1)
+  colnames(CA_par) <- c(sprintf("x0_%d", c(1:n_factors)), sprintf("delta_%d", c(1:n_factors)), sprintf("kappa_%d", c(1:n_factors)), sprintf("sigma_%d", c(1:n_factors)), sprintf("theta_P_%d", c(1:n_factors)), c("r1", "r2", "rc"), "log_lik")
   # - Initialize log-likelihood
   neg_loglikelihood <- 0
   
@@ -879,51 +1001,56 @@ co_asc_CIR <- function(mu_bar, x0=c(1.611524e-03, 5.763081e-03, 1.208483e-02), d
   delta_par <- delta
   l_kappa_par <- log(kappa) # - take logs to ensure positivity
   l_sigma_par <- log(sigma)
-  l_theta_Q_par <- log(theta_Q)
   l_theta_P_par <- log(theta_P)
   l_r_par <- log(r)
   
   iter_count <- 1
   repeat{
     
-    l_x0_opt_CIR_KD <- optim(l_x0_par, nLL_CIR_uKD_CA_bd, mu_bar=mu_bar, delta=delta_par, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_theta_Q=l_theta_Q_par, l_theta_P=l_theta_P_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
+    l_x0_opt_CIR_KD <- optim(l_x0_par, nLL_CIR_uKD_CA_bd, mu_bar=mu_bar, delta=delta_par, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_theta_P=l_theta_P_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(maxit = 10000))  
     l_x0_par <- l_x0_opt_CIR_KD$par
+    print(paste(sprintf("X(0)_%d", c(1:n_factors)), round(exp(l_x0_par),3)))
     
-    delta_opt_CIR_KD <- optim(delta_par, nLL_CIR_uKD_CA_bd, mu_bar=mu_bar, l_x0=l_x0_par, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_theta_Q=l_theta_Q_par, l_theta_P=l_theta_P_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
+    delta_opt_CIR_KD <- optim(delta_par, nLL_CIR_uKD_CA_bd, mu_bar=mu_bar, l_x0=l_x0_par, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_theta_P=l_theta_P_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(maxit = 10000))  
     delta_par <- delta_opt_CIR_KD$par
+    print(paste(sprintf("delta_%d", c(1:n_factors)), round(delta_par,3)))
     
-    l_kappa_opt_CIR_KD <- optim(l_kappa_par, nLL_CIR_uKD_CA_bd, mu_bar=mu_bar, delta=delta_par, l_x0=l_x0_par, l_sigma=l_sigma_par, l_theta_Q=l_theta_Q_par, l_theta_P=l_theta_P_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
+    l_kappa_opt_CIR_KD <- optim(l_kappa_par, nLL_CIR_uKD_CA_bd, mu_bar=mu_bar, delta=delta_par, l_x0=l_x0_par, l_sigma=l_sigma_par, l_theta_P=l_theta_P_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(maxit = 10000))  
     l_kappa_par <- l_kappa_opt_CIR_KD$par
+    print(paste(sprintf("kappa_%d", c(1:n_factors)), round(exp(l_kappa_par),3)))
     
-    l_sigma_opt_CIR_KD <- optim(l_sigma_par, nLL_CIR_uKD_CA_bd, mu_bar=mu_bar, delta=delta_par, l_kappa=l_kappa_par, l_x0=l_x0_par, l_theta_Q=l_theta_Q_par, l_theta_P=l_theta_P_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
+    l_sigma_opt_CIR_KD <- optim(l_sigma_par, nLL_CIR_uKD_CA_bd, mu_bar=mu_bar, delta=delta_par, l_kappa=l_kappa_par, l_x0=l_x0_par, l_theta_P=l_theta_P_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(maxit = 10000))  
     l_sigma_par <- l_sigma_opt_CIR_KD$par
+    print(paste(sprintf("sigma_%d", c(1:n_factors)), round(exp(l_sigma_par),3)))
     
-    l_theta_Q_opt_CIR_KD <- optim(l_theta_Q_par, nLL_CIR_uKD_CA_bd, mu_bar=mu_bar, delta=delta_par, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_x0=l_x0_par, l_theta_P=l_theta_P_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
-    l_theta_Q_par <- l_theta_Q_opt_CIR_KD$par
-    
-    l_theta_P_opt_CIR_KD <- optim(l_theta_P_par, nLL_CIR_uKD_CA_bd, mu_bar=mu_bar, delta=delta_par, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_theta_Q=l_theta_Q_par, l_x0=l_x0_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
+    l_theta_P_opt_CIR_KD <- optim(l_theta_P_par, nLL_CIR_uKD_CA_bd, mu_bar=mu_bar, delta=delta_par, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_x0=l_x0_par, l_r=l_r_par, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(maxit = 10000))  
     l_theta_P_par <- l_theta_P_opt_CIR_KD$par
+    print(paste(sprintf("theta_P_%d", c(1:n_factors)), round(exp(l_theta_P_par), 3)))
     
-    l_r_opt_CIR_KD <- optim(l_r_par, nLL_CIR_uKD_CA_bd, mu_bar=mu_bar, delta=delta_par, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_theta_Q=l_theta_Q_par, l_theta_P=l_theta_P_par, l_x0=l_x0_par, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(trace=TRUE, maxit = 10000))  
+    l_r_opt_CIR_KD <- optim(l_r_par, nLL_CIR_uKD_CA_bd, mu_bar=mu_bar, delta=delta_par, l_kappa=l_kappa_par, l_sigma=l_sigma_par, l_theta_P=l_theta_P_par, l_x0=l_x0_par, gr = NULL, method = "Nelder-Mead", hessian = FALSE, control=list(maxit = 10000))  
     l_r_par <- l_r_opt_CIR_KD$par
+    print(paste(c("r1", "r2", "rc"), round(exp(l_r_par),3)))
     
     # - Store par_est
-    CA_par[iter_count, 1:length(c(x0, delta, kappa, sigma, theta_Q, theta_P, r))] <- c(exp(l_x0_par), delta_par, exp(l_kappa_par), exp(l_sigma_par), exp(l_theta_Q_par), exp(l_theta_P_par), exp(l_r_par))
-    CA_par[iter_count, length(c(x0, delta, kappa, sigma, theta_Q, theta_P, r))+1] <- -0.5 * nLL_CIR_uKD_CA_bd(l_x0_par, delta_par, l_kappa_par, l_sigma_par, l_theta_Q_par, l_theta_P_par, l_r_par, mu_bar) - 0.5 * nrow(mu_bar) * ncol(mu_bar)
+    CA_par[iter_count, 1:length(c(x0, delta, kappa, sigma, theta_P, r))] <- c(exp(l_x0_par), delta_par, exp(l_kappa_par), exp(l_sigma_par), exp(l_theta_P_par), exp(l_r_par))
+    CA_par[iter_count, length(c(x0, delta, kappa, sigma, theta_P, r))+1] <- -0.5 * nLL_CIR_uKD_CA_bd(l_x0_par, delta_par, l_kappa_par, l_sigma_par, l_theta_P_par, l_r_par, mu_bar) - 0.5 * nrow(mu_bar) * ncol(mu_bar)
     
-    
-    if (abs(nLL_CIR_uKD_CA_bd(l_x0_par, delta_par, l_kappa_par, l_sigma_par, l_theta_Q_par, l_theta_P_par, l_r_par, mu_bar) - neg_loglikelihood) < tol_lik | (iter_count==max_iter) ){
+    if (abs(nLL_CIR_uKD_CA_bd(l_x0_par, delta_par, l_kappa_par, l_sigma_par, l_theta_P_par, l_r_par, mu_bar) - neg_loglikelihood) < tol_lik | (iter_count==max_iter) ){
       break
     }else{
       # - Update log-likelihood
-      neg_loglikelihood <- nLL_CIR_uKD_CA_bd(l_x0_par, delta_par, l_kappa_par, l_sigma_par, l_theta_Q_par, l_theta_P_par, l_r_par, mu_bar)
+      neg_loglikelihood <- nLL_CIR_uKD_CA_bd(l_x0_par, delta_par, l_kappa_par, l_sigma_par, l_theta_P_par, l_r_par, mu_bar)
+      
+      print(paste("log_lik", round(CA_par[iter_count, length(c(x0, delta, kappa, sigma, theta_P, r))+1],2)))
+      print(paste(iter_count, "% iteration"))
+      print(paste("---------------------------------"))
+      
       iter_count <- iter_count + 1
     }
   }
   
-  return(list(par_est = list(x0=CA_par[iter_count,1:n_factors], delta=CA_par[iter_count,((n_factors + 1):(n_factors*2))], kappa=CA_par[iter_count,((n_factors*2 + 1):(n_factors*3))], sigma=CA_par[iter_count,((n_factors*3 + 1):(n_factors*4))], theta_Q=CA_par[iter_count,((n_factors*4 + 1):(n_factors*5))], theta_P=CA_par[iter_count,((n_factors*5 + 1):(n_factors*6))], r1=CA_par[iter_count,(n_factors*6 + 1)], r2=CA_par[iter_count,(n_factors*6 + 2)], rc=CA_par[iter_count,(n_factors*6 + 3)]), log_lik = CA_par[iter_count,length(c(x0, delta, kappa, sigma, theta_Q, theta_P, r))+1], CA_table = CA_par[1:iter_count,]))
+  return(list(par_est = list(x0=CA_par[iter_count,1:n_factors], delta=CA_par[iter_count,((n_factors + 1):(n_factors*2))], kappa=CA_par[iter_count,((n_factors*2 + 1):(n_factors*3))], sigma=CA_par[iter_count,((n_factors*3 + 1):(n_factors*4))], theta_P=CA_par[iter_count,((n_factors*4 + 1):(n_factors*5))], r1=CA_par[iter_count,(n_factors*5 + 1)], r2=CA_par[iter_count,(n_factors*5 + 2)], rc=CA_par[iter_count,(n_factors*5 + 3)]), log_lik = CA_par[iter_count,length(c(x0, delta, kappa, sigma, theta_P, r))+1], CA_table = CA_par[1:iter_count,]))
 }
-
 
 
 
