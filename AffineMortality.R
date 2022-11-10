@@ -1,12 +1,12 @@
 # - Functions for AffineMortality package
 
-source("Coordinate_Ascent.R")
-source("Est_fun.R")
-source("FilterSmoother.R")
-source("GoodnessofFit.R")
-source("Projection.R")
-source("StErr_Bootstrap.R")
-source("StErr_MultImp.R")
+#source("Coordinate_Ascent.R")
+#source("Est_fun.R")
+#source("FilterSmoother.R")
+#source("GoodnessofFit.R")
+#source("Projection.R")
+#source("StErr_Bootstrap.R")
+#source("StErr_MultImp.R")
 
 
 ## - Fit
@@ -25,7 +25,27 @@ sv_default <- list(BSi=list(x0=c(6.960591e-03, 9.017154e-03, 5.091784e-03, 0), d
 
 # - Starting values must be provided by the user in the format of a list, eg.: list(x0=c(...))
 ## - eventually add the option for using subplex optimization
-affine.fit <- function(model="BS", fact_dep=FALSE, n_factors=3, data=data_default, st_val=0, max_iter=200, tolerance=0.1, wd=0){
+#' @title affine_fit
+#'
+#' @description Estimation of affine mortality models
+#'
+#' @param model Specific model to be fit. E.g. for the Blackburn-Sherris model we have model="BS", and so on
+#' @param fact_dep Boolean parameter indicating whether estimate models with factor dependence (fact_dep=TRUE) or independence
+#' @param n_factors Number of factors. For some models, these are set by default
+#' @param data Table with the average mortality rates
+#' @param st_val Starting value for the parameters. If not set, then default values will be used
+#' @param max_iter Maximum number of iterations for the Coordinate Ascent estimation algorithm in absence of convergence
+#' @param tolerance Minimum value of improvement of the log-likelihood value before convergence
+#' @param wd Working directory for saving the partial output of the estimation process
+#'
+#' @return A data frame object that contains a summary of a sample that
+#'     can later be converted to a TeX output using \code{overview_print}
+#' @examples
+#' data(toydata)
+#' output_table <- overview_tab(dat = toydata, id = ccode, time = year)
+#' @export
+affine_fit <- function(model="BS", fact_dep=FALSE, n_factors=3, data=data_default, st_val=0, max_iter=200, tolerance=0.1, wd=0){
+
   if(model=="AFNS"){
     if(fact_dep==TRUE){
       if(st_val==0){ # - then use default starting value
@@ -46,7 +66,7 @@ affine.fit <- function(model="BS", fact_dep=FALSE, n_factors=3, data=data_defaul
       if(fact_dep==TRUE){
           if(n_factors==2){
             if(st_val==0){
-              st_val <- sv_default$BSd # - change in order to take into account the number of factors
+              st_val <- list(x0=sv_default$BSd$x0[1:2], delta=sv_default$BSd$delta[1:3], kappa=sv_default$BSd$kappa[1:2], sigma_dg=sv_default$BSd$sigma_dg[1:2], Sigma_cov=sv_default$BSd$Sigma_cov[1], r=c(sv_default$BSd$r1, sv_default$BSd$r2, sv_default$BSd$rc)) # - change in order to take into account the number of factors
             }
           fit <- co_asc_BSd_2F(mu_bar = data, x0=st_val$x0, delta=st_val$delta, kappa=st_val$kappa, sigma_dg = st_val$sigma_dg, Sigma_cov = st_val$Sigma_cov, r=c(st_val$r1, st_val$r2, st_val$rc), max_iter=max_iter, tol_lik=tolerance, workdir=wd)
           return(list(model=model, fit=fit, n.parameters=13, AIC=AIC_BIC(fit$log_lik, 13, (nrow(data) * ncol(data)))$AIC, BIC=AIC_BIC(fit$log_lik, 13, (nrow(data) * ncol(data)))$BIC))
@@ -117,27 +137,43 @@ affine.fit <- function(model="BS", fact_dep=FALSE, n_factors=3, data=data_defaul
              }
            }
 
-           
+
          }
          }
    }}}
 
-  
+
 #======================== - Filtering distribution - ===================================
 
 # - Filtering distribution (xfilter)
+#' @title xfilter
+#'
+#' @description Estimation of the moments of the latent states
+#'
+#' @param model Affine model. E.g. for the Blackburn-Sherris model we have model="BS", and so on
+#' @param fact_dep Boolean parameter indicating whether estimate models with factor dependence (fact_dep=TRUE) or independence
+#' @param n_factors Number of factors. For some models, these are set by default
+#' @param parameters Starting value for the parameters. If not set, then default values will be used
+#' @param data Table with the average mortality rates
+#'
+#' @return A data frame object that contains a summary of a sample that
+#'     can later be converted to a TeX output using \code{overview_print}
+#' @examples
+#' data(toydata)
+#' output_table <- overview_tab(dat = toydata, id = ccode, time = year)
+#' @export
 xfilter <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, data=data_default){
   if(model=="AFNS"){
     if(fact_dep==TRUE){
       if(parameters==0){ # - then use default starting value
         parameters <- sv_default$AFNSd
-      }         
+      }
       filter <- KF_AFNSd_uKD(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data)
       return(filter)
     } else{
       if(parameters==0){
         parameters <- sv_default$AFNSi
-      }         
+      }
       filter <- KF_AFNSi_uKD(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data)
       return(filter)
     }
@@ -146,11 +182,11 @@ xfilter <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, data=
       if(fact_dep==TRUE){
         if(parameters==0){
           if(n_factors==2){
-            parameters <- sv_default$BSd # - change in order to take into account the number of factors
-          } 
+            parameters <- list(x0=sv_default$BSd$x0[1:2], delta=sv_default$BSd$delta[1:3], kappa=sv_default$BSd$kappa[1:2], sigma_dg=sv_default$BSd$sigma_dg[1:2], Sigma_cov=sv_default$BSd$Sigma_cov[1], r=c(sv_default$BSd$r1, sv_default$BSd$r2, sv_default$BSd$rc)) # - change in order to take into account the number of factors
+          }
           filter <- KF_BSd_2F_uKD(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data)
           return(filter)
-          
+
         } else{
           if(n_factors==2){
             filter <- KF_BSd_2F_uKD(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data)
@@ -163,16 +199,16 @@ xfilter <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, data=
       } else{ # - it is the Blackburn-Sherris model with independent factors
         if(parameters==0){
           parameters <- sv_default$BSi
-        } 
+        }
         filter <- KF_BSi_uKD(x0=parameters$x0[1:n_factors], delta=parameters$delta[1:n_factors], kappa=parameters$kappa[1:n_factors], sigma = parameters$sigma[1:n_factors], r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data)
         return(filter)
-        
+
       }
     } else{
       if(model=="CIR"){
         if(parameters==0){
           parameters <- sv_default$CIR
-        } 
+        }
         filter <- KF_CIR_uKD(x0=parameters$x0[1:n_factors], delta=parameters$delta[1:n_factors], kappa=parameters$kappa[1:n_factors], sigma=parameters$sigma[1:n_factors], theta_P=parameters$theta_P[1:n_factors], r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data)
         return(filter)
       } else{
@@ -180,13 +216,13 @@ xfilter <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, data=
         if(fact_dep==TRUE){
           if(parameters==0){
             parameters <- sv_default$AFGNSd
-          } 
+          }
           filter <- KF_AFGNSd_uKD(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data)
           return(filter)
         } else{
           if(parameters==0){
             parameters <- sv_default$AFGNSi
-          } 
+          }
           filter <- KF_AFGNSi_uKD(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data)
           return(filter)
         }} else{
@@ -194,28 +230,28 @@ xfilter <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, data=
             if(fact_dep==TRUE){
               if(parameters==0){
                 parameters <- sv_default$AFUNSd
-              } 
+              }
               filter <- KF_AFUNSd_uKD(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data)
               return(filter)
             } else{
                 if(parameters==0){
                   parameters <- sv_default$AFUNSi
-                } 
+                }
                 filter <- KF_AFUNSi_uKD(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data)
                 return(filter)
               }
           }else{
-            if(model="AFRNS"){
+            if(model=="AFRNS"){
               if(fact_dep==TRUE){
                 if(parameters==0){
                   parameters <- sv_default$AFRNSd
-                } 
+                }
                 filter <- KF_AFRNSd_uKD(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data)
                 return(filter)
               } else{
                 if(parameters==0){
                   parameters <- sv_default$AFRNSi
-                } 
+                }
                 filter <- KF_AFRNSi_uKD(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data)
                 return(filter)
               }
@@ -224,13 +260,13 @@ xfilter <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, data=
                 if(fact_dep==TRUE){
                   if(parameters==0){
                     parameters <- sv_default$GMkd
-                  } 
+                  }
                   filter <- KF_GMkd_uKD(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, gamma=parameters$gamma, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data)
                   return(filter)
                 } else{
                   if(parameters==0){
                     parameters <- sv_default$GMki
-                  } 
+                  }
                   filter <- KF_GMki_uKD(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, gamma=parameters$gamma, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data)
                   return(filter)
                 }
@@ -244,27 +280,55 @@ xfilter <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, data=
 }
 
 #======================== - Smoothing - ===================================
-
+#' @title xsmooth
+#'
+#' @description Estimation of the moments of the latent states
+#'
+#' @param filterobject An object as of the output of xfilter
+#' @param kappa parameter kappa from the real-world dynamics of the latent variables
+#'
+#' @return A data frame object that contains a summary of a sample that
+#'     can later be converted to a TeX output using \code{overview_print}
+#' @examples
+#' data(toydata)
+#' output_table <- overview_tab(dat = toydata, id = ccode, time = year)
+#' @export
 xsmooth <- function(filterobject, kappa){
-  smooth <- RTS_sm_bas(filterobject$X_t, filterobject$X_t_c, filterobject$S_t, filterobject$S_t_c, kappa, ncol(filterobject$X_t))
+  smooth <- RTS_sm_bas(filterobject$X_t, filterobject$X_t_c, filterobject$S_t, filterobject$S_t_c, kappa, (ncol(filterobject$X_t)-1))
   return(smooth)
 }
 
 #======================== - Goodness of fit - ===================================
 
 ## - Fitted rates
-mubar.hat <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, data=data_default){
+#' @title mubar_hat
+#'
+#' @description Function returning the fitted values of the average mortality rates
+#'
+#' @param model Affine model. E.g. for the Blackburn-Sherris model we have model="BS", and so on
+#' @param fact_dep Boolean parameter indicating whether estimate models with factor dependence (fact_dep=TRUE) or independence
+#' @param n_factors Number of factors. For some models, these are set by default
+#' @param parameters Starting value for the parameters. If not set, then default values will be used
+#' @param data Table with the average mortality rates
+#'
+#' @return A data frame object that contains a summary of a sample that
+#'     can later be converted to a TeX output using \code{overview_print}
+#' @examples
+#' data(toydata)
+#' output_table <- overview_tab(dat = toydata, id = ccode, time = year)
+#' @export
+mubar_hat <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, data=data_default){
   if(model=="AFNS"){
     if(fact_dep==TRUE){
       if(parameters==0){ # - then use default starting value
         parameters <- sv_default$AFNSd
-      } 
+      }
       fitted <- mu_bar_hat_AFNSd(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data)
       return(fitted)
     } else{
       if(parameters==0){
         parameters <- sv_default$AFNSi
-      } 
+      }
       fitted <- mu_bar_hat_AFNSi(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data)
       return(fitted)
     }
@@ -273,7 +337,7 @@ mubar.hat <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, dat
       if(fact_dep==TRUE){
         if(parameters==0){
           if(n_factors==2){
-            parameters <- sv_default$BSd # - change in order to take into account the number of factors
+            parameters <- list(x0=sv_default$BSd$x0[1:2], delta=sv_default$BSd$delta[1:3], kappa=sv_default$BSd$kappa[1:2], sigma_dg=sv_default$BSd$sigma_dg[1:2], Sigma_cov=sv_default$BSd$Sigma_cov[1], r=c(sv_default$BSd$r1, sv_default$BSd$r2, sv_default$BSd$rc)) # - change in order to take into account the number of factors
             fitted <- mu_bar_hat_BSd_2F(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data)
             return(fitted)
           } else{ # - the factors must be three
@@ -295,7 +359,7 @@ mubar.hat <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, dat
       } else{ # - it is the Blackburn-Sherris model with independent factors
         if(parameters==0){
           parameters <- sv_default$BSi
-        } 
+        }
         fitted <- mu_bar_hat_BSi(x0=parameters$x0[1:n_factors], delta=parameters$delta[1:n_factors], kappa=parameters$kappa[1:n_factors], sigma = parameters$sigma[1:n_factors], r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data)
         return(fitted)
       }
@@ -303,15 +367,15 @@ mubar.hat <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, dat
       if(model=="CIR"){
         if(parameters==0){
           parameters <- sv_default$CIR
-        } 
+        }
         fitted <- mu_bar_hat_CIR(x0=parameters$x0[1:n_factors], delta=parameters$delta[1:n_factors], kappa=parameters$kappa[1:n_factors], sigma=parameters$sigma[1:n_factors], theta_P=parameters$theta_P[1:n_factors], r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data)
         return(fitted)
-        } else{ 
+        } else{
           if(model=="AFGNS"){    # - if none of the previous model was selected, then it is an AFGNS
         if(fact_dep==TRUE){
           if(parameters==0){
             parameters <- sv_default$AFGNSd
-          } 
+          }
           fitted <- mu_bar_hat_AFGNSd(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data)
           return(fitted)
           } else{
@@ -325,7 +389,7 @@ mubar.hat <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, dat
               if(fact_dep==TRUE){
                 if(parameters==0){
                   parameters <- sv_default$AFUNSd
-                } 
+                }
                 fitted <- mu_bar_hat_AFUNSd(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data)
                 return(fitted)
               } else{
@@ -334,13 +398,13 @@ mubar.hat <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, dat
                 }
                 fitted <- mu_bar_hat_AFUNSi(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data)
                 return(fitted)
-              }              
+              }
             }else{
               if(model=="AFRNS"){
                 if(fact_dep==TRUE){
                   if(parameters==0){
                     parameters <- sv_default$AFRNSd
-                  } 
+                  }
                   fitted <- mu_bar_hat_AFRNSd(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data)
                   return(fitted)
                 } else{
@@ -349,13 +413,13 @@ mubar.hat <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, dat
                   }
                   fitted <- mu_bar_hat_AFRNSi(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data)
                   return(fitted)
-                }                  
+                }
               }else{
                 if(model=="GMk"){
                   if(fact_dep==TRUE){
                     if(parameters==0){
                       parameters <- sv_default$GMkd
-                    } 
+                    }
                     fitted <- mu_bar_hat_GMkd(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, gamma=parameters$gamma, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data)
                     return(fitted)
                   } else{
@@ -364,7 +428,7 @@ mubar.hat <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, dat
                     }
                     fitted <- mu_bar_hat_GMki(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, gamma=parameters$gamma, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data)
                     return(fitted)
-                  }    
+                  }
                 }
               }
             }
@@ -374,17 +438,33 @@ mubar.hat <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, dat
     }
   }
 
-## - Standardized residuals
-std.res <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, data=data_default){
+## - Fitted rates
+#' @title std_res
+#'
+#' @description Function returning the standardized residuals
+#'
+#' @param model Affine model. E.g. for the Blackburn-Sherris model we have model="BS", and so on
+#' @param fact_dep Boolean parameter indicating whether estimate models with factor dependence (fact_dep=TRUE) or independence
+#' @param n_factors Number of factors. For some models, these are set by default
+#' @param parameters Starting value for the parameters. If not set, then default values will be used
+#' @param data Table with the average mortality rates
+#'
+#' @return A data frame object that contains a summary of a sample that
+#'     can later be converted to a TeX output using \code{overview_print}
+#' @examples
+#' data(toydata)
+#' output_table <- overview_tab(dat = toydata, id = ccode, time = year)
+#' @export
+std_res <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, data=data_default){
   if(model=="AFNS"){
     if(fact_dep==TRUE){
       if(parameters==0){ # - then use default starting value
         parameters <- sv_default$AFNSd
-      } 
+      }
     } else{
       if(parameters==0){
         parameters <- sv_default$AFNSi
-      } 
+      }
         std_res <- residuals_std_AFNSi(data, x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc))
         return(std_res)
     }
@@ -393,7 +473,7 @@ std.res <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, data=
       if(fact_dep==TRUE){
         if(parameters==0){
           if(n_factors==2){
-            parameters <- sv_default$BSd # - change in order to take into account the number of factors
+            parameters <- list(x0=sv_default$BSd$x0[1:2], delta=sv_default$BSd$delta[1:3], kappa=sv_default$BSd$kappa[1:2], sigma_dg=sv_default$BSd$sigma_dg[1:2], Sigma_cov=sv_default$BSd$Sigma_cov[1], r=c(sv_default$BSd$r1, sv_default$BSd$r2, sv_default$BSd$rc)) # - change in order to take into account the number of factors
             std_res <- residuals_std_BSd_2F(data, x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc))
             return(std_res)
           } else{ # - the factors must be three
@@ -425,7 +505,7 @@ std.res <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, data=
       if(model=="CIR"){
         if(parameters==0){
           parameters <- sv_default$CIR
-        } 
+        }
           std_res <- residuals_std_CIR(data, x0=parameters$x0[1:n_factors], delta=parameters$delta[1:n_factors], kappa=parameters$kappa[1:n_factors], sigma=parameters$sigma[1:n_factors], theta_P=parameters$theta_P[1:n_factors], r=c(parameters$r1, parameters$r2, parameters$rc))
           return(std_res)
       } else{
@@ -433,13 +513,13 @@ std.res <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, data=
         if(fact_dep==TRUE){
           if(parameters==0){
             parameters <- sv_default$AFGNSd
-          } 
+          }
             std_res <- residuals_std_AFGNSd(data, x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc))
             return(std_res)
         } else{
           if(parameters==0){
             parameters <- sv_default$AFGNSi
-          } 
+          }
             std_res <- residuals_std_AFGNSi(data, x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc))
             return(std_res)
         }}else{
@@ -447,13 +527,13 @@ std.res <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, data=
             if(fact_dep==TRUE){
               if(parameters==0){
                 parameters <- sv_default$AFRNSd
-              } 
+              }
               std_res <- residuals_std_AFRNSd(data, x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc))
               return(std_res)
             } else{
               if(parameters==0){
                 parameters <- sv_default$AFRNSi
-              } 
+              }
               std_res <- residuals_std_AFRNSi(data, x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc))
               return(std_res)
             }
@@ -462,13 +542,13 @@ std.res <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, data=
               if(fact_dep==TRUE){
                 if(parameters==0){
                   parameters <- sv_default$AFUNSd
-                } 
+                }
                 std_res <- residuals_std_AFUNSd(data, x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc))
                 return(std_res)
               } else{
                 if(parameters==0){
                   parameters <- sv_default$AFUNSi
-                } 
+                }
                 std_res <- residuals_std_AFUNSi(data, x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc))
                 return(std_res)
               }
@@ -477,16 +557,16 @@ std.res <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, data=
               if(fact_dep==TRUE){
                 if(parameters==0){
                   parameters <- sv_default$GMkd
-                } 
+                }
                 std_res <- residuals_std_GMkd(data, x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, gamma=parameters$gamma, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc))
                 return(std_res)
               } else{
                 if(parameters==0){
                   parameters <- sv_default$GMki
-                } 
+                }
                 std_res <- residuals_std_GMki(data, x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, gamma=parameters$gamma, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc))
                 return(std_res)
-              }              
+              }
             }}
           }
         }
@@ -496,18 +576,36 @@ std.res <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, data=
 }
 
 ## - Probability of negative rates
-pr.neg.mu <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, data=data_default, years_proj=1, n_simulations=100000){
+#' @title prob_neg_mu
+#'
+#' @description Probability of negative rates when projected over n years, based on simulated values of the latent variables
+#'
+#' @param model Affine model. E.g. for the Blackburn-Sherris model we have model="BS", and so on
+#' @param fact_dep Boolean parameter indicating whether estimate models with factor dependence (fact_dep=TRUE) or independence
+#' @param n_factors Number of factors. For some models, these are set by default
+#' @param parameters Starting value for the parameters. If not set, then default values will be used
+#' @param data Table with the average mortality rates
+#' @param years_proj Number of years of ahead-projected rates
+#' @param n_simulations Number of simulations
+#'
+#' @return A data frame object that contains a summary of a sample that
+#'     can later be converted to a TeX output using \code{overview_print}
+#' @examples
+#' data(toydata)
+#' output_table <- overview_tab(dat = toydata, id = ccode, time = year)
+#' @export
+prob_neg_mu <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, data=data_default, years_proj=1, n_simulations=100000){
   if(model=="AFNS"){
     if(fact_dep==TRUE){
       if(parameters==0){ # - then use default starting value
         parameters <- sv_default$AFNSd
-      } 
+      }
       pr_neg <- pr_neg_rates_f_AFNSd(n_sim=n_simulations, x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), data, yrs_proj=years_proj)
       return(pr_neg)
     } else{
       if(parameters==0){
         parameters <- sv_default$AFNSi
-      } 
+      }
         pr_neg <- pr_neg_rates_f_AFNSi(n_sim=n_simulations, x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc), data, yrs_proj=years_proj)
         return(pr_neg)
     }
@@ -516,7 +614,7 @@ pr.neg.mu <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, dat
       if(fact_dep==TRUE){
         if(parameters==0){
           if(n_factors==2){
-            parameters <- sv_default$BSd # - change in order to take into account the number of factors
+            parameters <- list(x0=sv_default$BSd$x0[1:2], delta=sv_default$BSd$delta[1:3], kappa=sv_default$BSd$kappa[1:2], sigma_dg=sv_default$BSd$sigma_dg[1:2], Sigma_cov=sv_default$BSd$Sigma_cov[1], r=c(sv_default$BSd$r1, sv_default$BSd$r2, sv_default$BSd$rc)) # - change in order to take into account the number of factors
             pr_neg <- pr_neg_rates_f_BSd_2F(n_sim=n_simulations, x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), data, yrs_proj=years_proj)
             return(pr_neg)
           } else{ # - the factors must be three
@@ -552,13 +650,13 @@ pr.neg.mu <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, dat
         if(fact_dep==TRUE){
           if(parameters==0){
             parameters <- sv_default$AFGNSd
-          } 
+          }
             pr_neg <- pr_neg_rates_f_AFGNSd(n_sim=n_simulations, x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), data, yrs_proj=years_proj)
             return(pr_neg)
         } else{
           if(parameters==0){
             parameters <- sv_default$AFGNSi
-          } 
+          }
             pr_neg <- pr_neg_rates_f_AFGNSi(n_sim=n_simulations, x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc), data, yrs_proj=years_proj)
             return(pr_neg)
         }}else{
@@ -566,46 +664,46 @@ pr.neg.mu <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, dat
           if(fact_dep==TRUE){
             if(parameters==0){
               parameters <- sv_default$AFRNSd
-            } 
+            }
             pr_neg <- pr_neg_rates_f_AFRNSd(n_sim=n_simulations, x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), data, yrs_proj=years_proj)
             return(pr_neg)
           } else{
             if(parameters==0){
               parameters <- sv_default$AFRNSi
-            } 
+            }
             pr_neg <- pr_neg_rates_f_AFRNSi(n_sim=n_simulations, x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc), data, yrs_proj=years_proj)
             return(pr_neg)
-          }          
+          }
         }else{
           if(model=="AFUNS"){
             if(fact_dep==TRUE){
               if(parameters==0){
                 parameters <- sv_default$AFUNSd
-              } 
+              }
               pr_neg <- pr_neg_rates_f_AFUNSd(n_sim=n_simulations, x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), data, yrs_proj=years_proj)
               return(pr_neg)
             } else{
               if(parameters==0){
                 parameters <- sv_default$AFUNSi
-              } 
+              }
               pr_neg <- pr_neg_rates_f_AFUNSi(n_sim=n_simulations, x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc), data, yrs_proj=years_proj)
               return(pr_neg)
-            }              
+            }
           }else{
             if(model=="GMk"){
               if(fact_dep==TRUE){
                 if(parameters==0){
                   parameters <- sv_default$GMkd
-                } 
+                }
                 pr_neg <- pr_neg_rates_f_GMkd(n_sim=n_simulations, x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, gamma=parameters$gamma, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), data, yrs_proj=years_proj)
                 return(pr_neg)
               } else{
                 if(parameters==0){
                   parameters <- sv_default$GMki
-                } 
+                }
                 pr_neg <- pr_neg_rates_f_GMki(n_sim=n_simulations, x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, gamma=parameters$gamma, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc), data, yrs_proj=years_proj)
                 return(pr_neg)
-              }               
+              }
             }
           }
         }
@@ -617,8 +715,25 @@ pr.neg.mu <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, dat
 
 #======================== - Projection - ===================================
 
-#' Improve output presentation with a smarter use of print
-affine.project <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, data=data_default, years_proj=1){
+# Improve output presentation with a smarter use of print
+#' @title affine_project
+#'
+#' @description Projected survival curves and average mortality rates over n years ahead projections
+#'
+#' @param model Affine model. E.g. for the Blackburn-Sherris model we have model="BS", and so on
+#' @param fact_dep Boolean parameter indicating whether estimate models with factor dependence (fact_dep=TRUE) or independence
+#' @param n_factors Number of factors. For some models, these are set by default
+#' @param parameters Starting value for the parameters. If not set, then default values will be used
+#' @param data Table with the average mortality rates
+#' @param years_proj Number of years of ahead-projected rates
+#'
+#' @return A data frame object that contains a summary of a sample that
+#'     can later be converted to a TeX output using \code{overview_print}
+#' @examples
+#' data(toydata)
+#' output_table <- overview_tab(dat = toydata, id = ccode, time = year)
+#' @export
+affine_project <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0, data=data_default, years_proj=1){
   if(model=="AFNS"){
     if(fact_dep==TRUE){
       if(parameters==0){ # - then use default starting value
@@ -629,7 +744,7 @@ affine.project <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0
     } else{
       if(parameters==0){
         parameters <- sv_default$AFNSi
-       } 
+       }
         projection <- S_t_AFNSi_proj(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc), data, proj_years=years_proj)
         return(projection)
     }
@@ -638,7 +753,7 @@ affine.project <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0
       if(fact_dep==TRUE){
         if(parameters==0){
           if(n_factors==2){
-            parameters <- sv_default$BSd # - change in order to take into account the number of factors
+            parameters <- list(x0=sv_default$BSd$x0[1:2], delta=sv_default$BSd$delta[1:3], kappa=sv_default$BSd$kappa[1:2], sigma_dg=sv_default$BSd$sigma_dg[1:2], Sigma_cov=sv_default$BSd$Sigma_cov[1], r=c(sv_default$BSd$r1, sv_default$BSd$r2, sv_default$BSd$rc)) # - change in order to take into account the number of factors
             projection <- S_t_BSd_2F_proj(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), data, proj_years=years_proj)
             return(projection)
           } else{ # - the factors must be three
@@ -658,7 +773,7 @@ affine.project <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0
       } else{ # - it is the Blackburn-Sherris model with independent factors
         if(parameters==0){
           parameters <- sv_default$BSi
-        } 
+        }
           projection <- S_t_BSi_proj(x0=parameters$x0[1:n_factors], delta=parameters$delta[1:n_factors], kappa=parameters$kappa[1:n_factors], sigma = parameters$sigma[1:n_factors], r=c(parameters$r1, parameters$r2, parameters$rc), data, proj_years=years_proj)
           return(projection)
       }
@@ -666,7 +781,7 @@ affine.project <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0
       if(model=="CIR"){
         if(parameters==0){
           parameters <- sv_default$CIR
-        } 
+        }
           projection <- S_t_CIR_proj(x0=parameters$x0[1:n_factors], delta=parameters$delta[1:n_factors], kappa=parameters$kappa[1:n_factors], sigma=parameters$sigma[1:n_factors], theta_P=parameters$theta_P[1:n_factors], r=c(parameters$r1, parameters$r2, parameters$rc), data, proj_years=years_proj)
           return(projection)
       } else{
@@ -675,13 +790,13 @@ affine.project <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0
         if(fact_dep==TRUE){
           if(parameters==0){
             parameters <- sv_default$AFGNSd
-          } 
+          }
             projection <- S_t_AFGNSd_proj(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), data, proj_years=years_proj)
             return(projection)
         } else{
           if(parameters==0){
             parameters <- sv_default$AFGNSi
-          } 
+          }
             projection <- S_t_AFGNSi_proj(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc), data, proj_years=years_proj)
             return(projection)
         }
@@ -690,13 +805,13 @@ affine.project <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0
           if(fact_dep==TRUE){
             if(parameters==0){
               parameters <- sv_default$AFRNSd
-            } 
+            }
             projection <- S_t_AFRNSd_proj(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), data, proj_years=years_proj)
             return(projection)
           } else{
             if(parameters==0){
               parameters <- sv_default$AFRNSi
-            } 
+            }
             projection <- S_t_AFRNSi_proj(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc), data, proj_years=years_proj)
             return(projection)
           }
@@ -705,13 +820,13 @@ affine.project <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0
             if(fact_dep==TRUE){
               if(parameters==0){
                 parameters <- sv_default$AFUNSd
-              } 
+              }
               projection <- S_t_AFUNSd_proj(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), data, proj_years=years_proj)
               return(projection)
             } else{
               if(parameters==0){
                 parameters <- sv_default$AFUNSi
-              } 
+              }
               projection <- S_t_AFUNSi_proj(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc), data, proj_years=years_proj)
               return(projection)
             }
@@ -720,17 +835,17 @@ affine.project <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0
               if(fact_dep==TRUE){
                 if(parameters==0){
                   parameters <- sv_default$GMkd
-                } 
+                }
                 projection <- S_t_GMkd_proj(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, gamma=parameters$gamma, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), data, proj_years=years_proj)
                 return(projection)
               } else{
                 if(parameters==0){
                   parameters <- sv_default$GMki
-                } 
+                }
                 projection <- S_t_GMki_proj(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, gamma=parameters$gamma, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc), data, proj_years=years_proj)
                 return(projection)
               }
-            } 
+            }
           }
         }
       }
@@ -742,18 +857,54 @@ affine.project <- function(model="BS", fact_dep=FALSE, n_factors=3, parameters=0
 #======================= - Graphics - ======================================
 
 ## - Heatmap of residuals
-heatmap.res <- function(residuals, color=TRUE){
+# Improve output presentation with a smarter use of print
+#' @title heatmap_res
+#'
+#' @description Returns the heatmaps created by using heatmaply
+#'
+#' @param residuals Table of residuals obtainable using std.res
+#' @param color TRUE if colored (default) or FALSE if black and white
+#'
+#' @return A heatmap of the residuals
+#' @examples
+#' data(toydata)
+#' output_table <- overview_tab(dat = toydata, id = ccode, time = year)
+#' @export
+heatmap_res <- function(residuals, color=TRUE){
   if(color==FALSE){
-    heatmaply(residuals[c(nrow(residuals):1),], dendrogram = "none", xlab = "Year", ylab="Age", dynamicTicks=FALSE, hide_colorbar=FALSE, margins= c(0,0,0,0), color = c("white", "black"))
+    heatmaply::heatmaply(residuals[c(nrow(residuals):1),], dendrogram = "none", xlab = "Year", ylab="Age", dynamicTicks=FALSE, hide_colorbar=FALSE, margins= c(0,0,0,0), color = c("white", "black"))
   } else{
-    heatmaply(residuals[c(nrow(residuals):1),], dendrogram = "none", xlab = "Year", ylab="Age", dynamicTicks=FALSE, hide_colorbar=FALSE, margins= c(0,0,0,0))
+    heatmaply::heatmaply(residuals[c(nrow(residuals):1),], dendrogram = "none", xlab = "Year", ylab="Age", dynamicTicks=FALSE, hide_colorbar=FALSE, margins= c(0,0,0,0))
   }
 }
 
 #======================= - Parameter uncertainty - ======================================
 
 ## - Fix by adding a print function for partial results
-par.cov <- function(method="MI", model="BS", fact_dep=FALSE, n_factors=3, parameters=0, data=data_default, D_se=50, BS_s=500, t_excl=4, max_iter=200, tolerance=0.1, wd=0){
+#' @title par_cov
+#'
+#' @description Estimation of the uncertainty of the parameters by Bootstrap or Multiple imputation
+#'
+#' @param method MI if Multiple Imputation or Bootstrap if the Bootstrap is desired
+#' @param model Affine model. E.g. for the Blackburn-Sherris model we have model="BS", and so on
+#' @param fact_dep Boolean parameter indicating whether estimate models with factor dependence (fact_dep=TRUE) or independence
+#' @param n_factors Number of factors. For some models, these are set by default
+#' @param parameters Starting value for the parameters. If not set, then default values will be used
+#' @param data Table with the average mortality rates
+#' @param D_se Number of Iterations if Multiple Imputation is used (default set to 50)
+#' @param BS_s Number of Boostrap sample if this method is used
+#' @param t_excl Number of time-periods to be excluded for stability of the Bootstrap method
+#' @param max_iter Maximum number of iterations for the Coordinate Ascent estimation algorithm in absence of convergence
+#' @param tolerance Minimum value of improvement of the log-likelihood value before convergence
+#' @param wd Working directory for saving the partial output of the estimation process
+#'
+#' @return A data frame object that contains a summary of a sample that
+#'     can later be converted to a TeX output using \code{overview_print}
+#' @examples
+#' data(toydata)
+#' output_table <- overview_tab(dat = toydata, id = ccode, time = year)
+#' @export
+par_cov <- function(method="MI", model="BS", fact_dep=FALSE, n_factors=3, parameters, data=data_default, D_se=50, BS_s=500, t_excl=4, max_iter=200, tolerance=0.1, wd=0){
 
   if(method=="MI"){
     if(model=="AFNS"){
@@ -803,33 +954,33 @@ par.cov <- function(method="MI", model="BS", fact_dep=FALSE, n_factors=3, parame
             if(fact_dep==TRUE){
               covariance <- CovEst_MI_AFRNSd(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data, D_se=D_se, max_it=max_iter, tolerance_lev=tolerance, workdir=wd)
               return(covariance)
-              
+
             } else{
               covariance <- CovEst_MI_AFRNSi(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data, D_se=D_se, max_it=max_iter, tolerance_lev=tolerance, workdir=wd)
               return(covariance)
-              
+
             }
           }else{
             if(model=="AFUNS"){
               if(fact_dep==TRUE){
                 covariance <- CovEst_MI_AFUNSd(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data, D_se=D_se, max_it=max_iter, tolerance_lev=tolerance, workdir=wd)
                 return(covariance)
-                
+
               } else{
                 covariance <- CovEst_MI_AFUNSi(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data, D_se=D_se, max_it=max_iter, tolerance_lev=tolerance, workdir=wd)
                 return(covariance)
-                
+
               }
             }else{
               if(model=="GMk"){
                 if(fact_dep==TRUE){
                   covariance <- CovEst_MI_GMkd(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, gamma=parameters$gamma, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data, D_se=D_se, max_it=max_iter, tolerance_lev=tolerance, workdir=wd)
                   return(covariance)
-                  
+
                 } else{
                   covariance <- CovEst_MI_GMki(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, gamma=parameters$gamma, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data, D_se=D_se, max_it=max_iter, tolerance_lev=tolerance, workdir=wd)
                   return(covariance)
-                  
+
                 }
               }
             }
@@ -885,31 +1036,31 @@ par.cov <- function(method="MI", model="BS", fact_dep=FALSE, n_factors=3, parame
             if(fact_dep==TRUE){
               covariance <- CovEst_BS_AFRNSd(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data, n_BS=BS_s, t_ex = t_excl, max_it=max_iter, tolerance_lev=tolerance, workdir=wd)
               return(covariance)
-              
+
             } else{
               covariance <- CovEst_BS_AFRNSi(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data, n_BS=BS_s, t_ex = t_excl, max_it=max_iter, tolerance_lev=tolerance, workdir=wd)
               return(covariance)
-            }            
+            }
           }else{
             if(model=="AFUNS"){
               if(fact_dep==TRUE){
                 covariance <- CovEst_BS_AFUNSd(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data, n_BS=BS_s, t_ex = t_excl, max_it=max_iter, tolerance_lev=tolerance, workdir=wd)
                 return(covariance)
-                
+
               } else{
                 covariance <- CovEst_BS_AFUNSi(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data, n_BS=BS_s, t_ex = t_excl, max_it=max_iter, tolerance_lev=tolerance, workdir=wd)
                 return(covariance)
-              } 
+              }
             }else{
               if(model=="GMk"){
                 if(fact_dep==TRUE){
                   covariance <- CovEst_BS_GMkd(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, gamma=parameters$gamma, sigma_dg = parameters$sigma_dg, Sigma_cov = parameters$Sigma_cov, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data, n_BS=BS_s, t_ex = t_excl, max_it=max_iter, tolerance_lev=tolerance, workdir=wd)
                   return(covariance)
-                  
+
                 } else{
                   covariance <- CovEst_BS_GMki(x0=parameters$x0, delta=parameters$delta, kappa=parameters$kappa, gamma=parameters$gamma, sigma = parameters$sigma, r=c(parameters$r1, parameters$r2, parameters$rc), mu_bar=data, n_BS=BS_s, t_ex = t_excl, max_it=max_iter, tolerance_lev=tolerance, workdir=wd)
                   return(covariance)
-                } 
+                }
               }
             }
           }
@@ -918,6 +1069,11 @@ par.cov <- function(method="MI", model="BS", fact_dep=FALSE, n_factors=3, parame
     }
   }}
 }
+
+
+
+
+
 
 
 
